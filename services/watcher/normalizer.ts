@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal } from './types';
+import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal, K8sEventSignal } from './types';
 
 function severityFromPhase(
   phase: PodSignal['phase'],
@@ -102,6 +102,40 @@ export function normalizeJobSignal(signal: JobSignal): RuntimeEvent {
     labels,
     payload: {
       phase: signal.phase,
+    },
+  };
+}
+
+export type K8sEventKind = 'K8sWarningEvent' | 'K8sNormalEvent';
+
+export function normalizeK8sEventSignal(signal: K8sEventSignal): RuntimeEvent {
+  const kind: K8sEventKind = signal.type === 'Warning' ? 'K8sWarningEvent' : 'K8sNormalEvent';
+  const severity: RuntimeEvent['severity'] = signal.type === 'Warning' ? 'error' : 'info';
+  const message = `[${signal.reason}] ${signal.message}`;
+
+  const labels: Record<string, string> = {
+    namespace: signal.involvedObject.namespace,
+    involvedObjectKind: signal.involvedObject.kind,
+    involvedObjectName: signal.involvedObject.name,
+  };
+  if (signal.runId)  labels.run_id  = signal.runId;
+  if (signal.stepId) labels.step_id = signal.stepId;
+
+  return {
+    eventId: uuid(),
+    runId: signal.runId ?? '',
+    stepId: signal.stepId,
+    timestamp: signal.timestamp,
+    source: 'event',
+    kind,
+    type: signal.type,
+    severity,
+    message,
+    labels,
+    payload: {
+      reason: signal.reason,
+      involvedObjectKind: signal.involvedObject.kind,
+      involvedObjectName: signal.involvedObject.name,
     },
   };
 }
