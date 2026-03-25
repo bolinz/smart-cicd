@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal, K8sEventSignal } from './types';
+import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal, K8sEventSignal, LogSignal } from './types';
 
 function severityFromPhase(
   phase: PodSignal['phase'],
@@ -136,6 +136,40 @@ export function normalizeK8sEventSignal(signal: K8sEventSignal): RuntimeEvent {
       reason: signal.reason,
       involvedObjectKind: signal.involvedObject.kind,
       involvedObjectName: signal.involvedObject.name,
+    },
+  };
+}
+
+export type LogEventKind = 'LogLine';
+
+export function normalizeLogSignal(signal: LogSignal): RuntimeEvent {
+  const kind: LogEventKind = 'LogLine';
+  const severity: RuntimeEvent['severity'] = signal.stream === 'stderr' ? 'warning' : 'debug';
+
+  const labels: Record<string, string> = {
+    namespace: signal.namespace,
+    podName: signal.podName,
+    containerName: signal.containerName,
+  };
+  if (signal.runId)  labels.run_id  = signal.runId;
+  if (signal.stepId) labels.step_id = signal.stepId;
+
+  return {
+    eventId: uuid(),
+    runId: signal.runId ?? '',
+    stepId: signal.stepId,
+    timestamp: signal.timestamp,
+    source: 'log',
+    kind,
+    type: signal.stream,
+    severity,
+    message: signal.line,
+    labels,
+    payload: {
+      podName: signal.podName,
+      containerName: signal.containerName,
+      stream: signal.stream,
+      line: signal.line,
     },
   };
 }

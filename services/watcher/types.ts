@@ -64,6 +64,7 @@ export interface K8sEventSignal {
 export interface LogSignal {
   podName: string;
   containerName: string;
+  namespace: string;
   timestamp: string;
   line: string;
   stream: 'stdout' | 'stderr';
