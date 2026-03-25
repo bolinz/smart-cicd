@@ -51,11 +51,14 @@ export interface K8sEventSignal {
     kind: string;
     name: string;
     namespace: string;
+    labels?: Record<string, string>;
   };
   type: 'Normal' | 'Warning';
   reason: string;
   message: string;
   timestamp: string;
+  runId?: string;
+  stepId?: string;
 }
 
 export interface LogSignal {
