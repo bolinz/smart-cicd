@@ -1,0 +1,138 @@
+# Runtime Event Schema
+#
+# All runtime-critical observation data flows through this schema.
+# Emitted by: watcher (PodWatcher, JobWatcher, EventWatcher, LogTailer)
+# Consumed by: rule-engine, ai-supervisor
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: RuntimeEvent
+description: Normalized runtime event produced by the observation plane.
+
+type: object
+required:
+  - eventId
+  - runId
+  - timestamp
+  - source
+  - kind
+  - type
+  - severity
+  - message
+  - labels
+  - payload
+
+properties:
+  eventId:
+    type: string
+    description: Globally unique identifier for this event. UUID v4 recommended.
+    example: "550e8400-e29b-41d4-a716-446655440000"
+
+  runId:
+    type: string
+    description: >
+      The pipeline run this event belongs to. Populated from the `run_id` label
+      on the observed Kubernetes resource, or empty string if no run context.
+    example: "run-abc123"
+
+  stepId:
+    type: string
+    description: The step within the run this event is associated with. Optional.
+    example: "step-build"
+
+  timestamp:
+    type: string
+    format: date-time
+    description: ISO 8601 timestamp of when the event was generated.
+    example: "2026-03-25T10:30:00.000Z"
+
+  source:
+    type: string
+    enum:
+      - pod       # PodWatcher
+      - job       # JobWatcher
+      - event     # EventWatcher
+      - log       # LogTailer
+      - metrics   # TelemetryCollector
+    description: Which watcher component generated this event.
+
+  kind:
+    type: string
+    description: >
+      Semantic event kind. Free-form but must be stable — do not rename
+      existing kinds without a migration path.
+    examples:
+      - "PodPhaseChanged"
+      - "PodRestartCountChanged"
+      - "PodTerminated"
+      - "JobActive"
+      - "JobSucceeded"
+      - "JobFailed"
+      - "K8sWarningEvent"
+      - "LogLine"
+      - "MetricThresholdBreached"
+
+  type:
+    type: string
+    description: >
+      Further classifies the event. For PodPhaseChanged this is the phase name
+      (Pending/Running/Succeeded/Failed/Unknown).
+    example: "Failed"
+
+  severity:
+    type: string
+    enum: [debug, info, warning, error]
+    description: >
+      Severity level. Use:
+      - debug: routine state transitions (e.g. Running)
+      - info: successful completions (e.g. Succeeded)
+      - warning: abnormal but recoverable (e.g. Pending, restart count increase)
+      - error: failures (e.g. Failed, Warning K8s events)
+
+  message:
+    type: string
+    description: Human-readable summary of the event.
+    example: "Pod my-runner-pod transitioned to Failed"
+
+  labels:
+    type: object
+    additionalProperties:
+      type: string
+    description: >
+      Arbitrary key-value metadata. At minimum includes:
+      - namespace: the Kubernetes namespace
+      - run_id (if available): pipeline run identifier
+      - step_id (if available): step identifier
+    example:
+      namespace: "default"
+      run_id: "run-abc123"
+      step_id: "step-build"
+
+  payload:
+    type: object
+    additionalProperties: true
+    description: >
+      Source-specific data. Contents vary by source and kind.
+      Must not contain runtime action directives.
+    examples:
+      # Pod source
+      pod:
+        phase: "Failed"
+        restartCount: 3
+        reason: "OOMKilled"
+        message: "Container my-container was OOMKilled"
+      # Job source
+      job:
+        active: 0
+        succeeded: 0
+        failed: 1
+      # K8s event source
+      event:
+        involvedObjectKind: "Pod"
+        involvedObjectName: "my-runner-pod"
+        reason: "Unhealthy"
+        count: 2
+      # Log source
+      log:
+        containerName: "main"
+        line: "ERROR: build failed with exit code 1"
+        stream: "stderr"
