@@ -61,6 +61,11 @@ def build_diff_text(owner: str, repo: str, pr_number: int) -> str:
 
 
 def call_minimax(system_prompt: str, user_prompt: str) -> dict:
+    if not MINIMAX_API_KEY:
+        raise EnvironmentError(
+            "MINIMAX_API_KEY is not set. "
+            "Add it as a GitHub Actions secret in repository Settings → Secrets → Actions."
+        )
     url = "https://api.minimaxi.com/v1/text/chatcompletion_v2"
     headers = {
         "Authorization": f"Bearer {MINIMAX_API_KEY}",
@@ -75,9 +80,54 @@ def call_minimax(system_prompt: str, user_prompt: str) -> dict:
     }
     resp = requests.post(url, headers=headers, json=payload, timeout=120)
     resp.raise_for_status()
-    data = resp.json()
+    try:
+        data = resp.json()
+    except ValueError as e:
+        raise RuntimeError(
+            f"MiniMax API returned non-JSON response (HTTP {resp.status_code}): "
+            f"{resp.text[:500]!r}"
+        )
+
+    # Handle API-level errors
+    if "error" in data:
+        raise RuntimeError(f"MiniMax API error: {data['error']}")
+
+    # Handle unexpected response shapes
+    if "choices" not in data:
+        raise RuntimeError(
+            f"MiniMax API returned unexpected response (no 'choices' field). "
+            f"Response: {data}"
+        )
+
     content = data["choices"][0]["message"]["content"]
-    return json.loads(content)
+
+    # Handle empty content
+    if not content:
+        raise RuntimeError(
+            "MiniMax API returned empty content. "
+            "Check that the API key is valid and the model supports this request."
+        )
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        # MiniMax sometimes wraps JSON in markdown code fences
+        stripped = content.strip()
+        if stripped.startswith("```"):
+            # Strip leading ```json and trailing ```
+            lines = stripped.split("\n")
+            if len(lines) >= 2 and lines[0].strip().startswith("```"):
+                lines = lines[1:]  # Remove first line (```json)
+            if lines and lines[-1].strip().endswith("```"):
+                lines = lines[:-1]  # Remove last line (```)
+            stripped = "\n".join(lines).strip()
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            raise RuntimeError(
+                f"MiniMax API returned non-JSON content (JSONDecodeError: {e}). "
+                f"Content preview: {content[:200]!r}"
+            )
 
 
 def format_comment(review: dict) -> str:
@@ -130,8 +180,31 @@ def main():
         f"DIFF:\n{diff_text}"
     )
 
-    review = call_minimax(policy, user_prompt)
-    comment_body = format_comment(review)
+    try:
+        review = call_minimax(policy, user_prompt)
+        comment_body = format_comment(review)
+    except EnvironmentError as e:
+        comment_body = (
+            "## MiniMax PR Review\n\n"
+            f"⚠️ **Configuration error:** {e}\n\n"
+            "The workflow cannot run without a valid `MINIMAX_API_KEY` secret. "
+            "Add it in **Settings → Secrets → Actions → New repository secret**."
+        )
+        gh_api_post(
+            f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
+            {"body": comment_body},
+        )
+        return  # Exit gracefully — not a code bug
+    except Exception as e:
+        comment_body = (
+            "## MiniMax PR Review\n\n"
+            f"⚠️ **Review failed:** {type(e).__name__}: {e}"
+        )
+        gh_api_post(
+            f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
+            {"body": comment_body},
+        )
+        raise  # Exit with error so CI shows failure
 
     gh_api_post(
         f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
