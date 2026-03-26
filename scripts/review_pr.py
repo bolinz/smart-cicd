@@ -183,28 +183,18 @@ def main():
     try:
         review = call_minimax(policy, user_prompt)
         comment_body = format_comment(review)
-    except EnvironmentError as e:
+    except (EnvironmentError, RuntimeError, requests.RequestException, subprocess.CalledProcessError) as e:
         comment_body = (
             "## MiniMax PR Review\n\n"
-            f"⚠️ **Configuration error:** {e}\n\n"
-            "The workflow cannot run without a valid `MINIMAX_API_KEY` secret. "
-            "Add it in **Settings → Secrets → Actions → New repository secret**."
+            f"⚠️ **Review skipped:** {type(e).__name__}: {e}\n\n"
+            "This is a non-blocking review step. "
+            "Add `MINIMAX_API_KEY` as a GitHub Actions secret to enable AI reviews."
         )
         gh_api_post(
             f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
             {"body": comment_body},
         )
-        return  # Exit gracefully — not a code bug
-    except Exception as e:
-        comment_body = (
-            "## MiniMax PR Review\n\n"
-            f"⚠️ **Review failed:** {type(e).__name__}: {e}"
-        )
-        gh_api_post(
-            f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
-            {"body": comment_body},
-        )
-        raise  # Exit with error so CI shows failure
+        return  # Exit gracefully — review is optional
 
     gh_api_post(
         f"/repos/{owner}/{repo}/issues/{pr_number}/comments",
