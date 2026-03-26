@@ -1,3 +1,22 @@
-# Intervention Policy
+# Define concrete action rules:
 
-TODO: Define intervention policies
+allowed:
+  - rerun-step
+  - clear-cache-and-rerun
+  - restart-runner-pod
+  - stop-run
+
+guarded:
+  - increase-resources
+  - adjust-timeout
+
+forbidden:
+  - deploy-production
+  - modify-rbac
+  - rotate-secrets
+
+limits:
+  maxAttemptsPerStep: 3
+  maxInterventionsPerRun: 5
+  resourceBumpLimit: "2x"
+  timeoutAdjustmentLimitMs: 300000
