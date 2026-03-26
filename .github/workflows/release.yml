@@ -9,6 +9,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +29,6 @@ jobs:
           version: npm run release:version
           commit: 'chore: version packages'
           title: 'chore: version packages'
-          label: 'autorelease'
           publish: npm run release:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
