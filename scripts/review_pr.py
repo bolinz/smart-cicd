@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import logging
 import os
 import subprocess
 from pathlib import Path
@@ -163,6 +164,12 @@ def try_enable_auto_merge(pr_number: int):
     )
 
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[MiniMax PR Review] %(levelname)s: %(message)s",
+)
+
+
 def main():
     event = load_event()
     pr = event["pull_request"]
@@ -184,6 +191,7 @@ def main():
         review = call_minimax(policy, user_prompt)
         comment_body = format_comment(review)
     except (EnvironmentError, RuntimeError, requests.RequestException, subprocess.CalledProcessError) as e:
+        logging.warning(f"Review skipped: {type(e).__name__}: {e}")
         comment_body = (
             "## MiniMax PR Review\n\n"
             f"⚠️ **Review skipped:** {type(e).__name__}: {e}\n\n"
