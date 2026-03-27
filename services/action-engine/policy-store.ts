@@ -2,8 +2,8 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import type { ActionType } from '../control-plane/types';
-import type { ActionLimits } from './types';
+import type { ActionType } from '../control-plane/types.js';
+import type { ActionLimits } from './types.js';
 
 // YAML is small and well-structured — manual parsing is acceptable for MVP
 // In production, use js-yaml or a similar library

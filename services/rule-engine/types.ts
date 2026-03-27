@@ -1,6 +1,6 @@
 // Core types for rule-engine
 
-import type { RuntimeEvent } from '../watcher/types';
+import type { RuntimeEvent } from '../watcher/types.js';
 
 export type RuleName =
   | 'stuck-step'

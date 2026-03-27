@@ -1,9 +1,9 @@
 // Validates candidate actions against policy
 
-import type { CandidateAction } from './types';
-import type { ActionType, PipelineRun } from '../control-plane/types';
-import { PolicyStore } from './policy-store';
-import type { InterventionStore } from './intervention-store';
+import type { CandidateAction } from './types.js';
+import type { ActionType, PipelineRun } from '../control-plane/types.js';
+import { PolicyStore } from './policy-store.js';
+import type { InterventionStore } from './intervention-store.js';
 
 export type PolicyDecision = 'allowed' | 'denied' | 'guarded';
 

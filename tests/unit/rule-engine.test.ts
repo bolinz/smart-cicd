@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { RuntimeEvent } from '../../services/watcher/types';
-import type { DetectionContext, RuleResult } from '../../services/rule-engine/types';
+import type { RuntimeEvent } from '../../services/watcher/types.js';
+import type { DetectionContext, RuleResult } from '../../services/rule-engine/types.js';
 import {
   stuckStepRule,
   repeatedErrorRule,
@@ -11,7 +11,7 @@ import {
   schedulingFailureRule,
   evaluateAllRules,
   escalateResults,
-} from '../../services/rule-engine';
+} from '../../services/rule-engine/index.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

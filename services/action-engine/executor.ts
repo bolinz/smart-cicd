@@ -1,8 +1,8 @@
 // Executes approved interventions
 
 import type { CoreV1Api } from '@kubernetes/client-node';
-import type { InterventionRecord, CandidateAction, ActionResult } from './types';
-import type { PipelineRun } from '../control-plane/types';
+import type { InterventionRecord, CandidateAction, ActionResult } from './types.js';
+import type { PipelineRun } from '../control-plane/types.js';
 
 export interface ActionDeps {
   k8sApi: CoreV1Api;

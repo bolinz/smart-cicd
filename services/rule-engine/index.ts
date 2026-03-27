@@ -1,4 +1,4 @@
-export { evaluateAllRules, escalateResults } from './detector';
+export { evaluateAllRules, escalateResults } from './detector.js';
 export {
   stuckStepRule,
   repeatedErrorRule,
@@ -7,6 +7,6 @@ export {
   resourcePressureRule,
   pullBackoffRule,
   schedulingFailureRule,
-} from './rules';
+} from './rules.js';
 
-export type { RuleName, RuleSeverity, RuleResult, DetectionContext, RuleEvaluator } from './types';
+export type { RuleName, RuleSeverity, RuleResult, DetectionContext, RuleEvaluator } from './types.js';

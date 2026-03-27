@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1
+# Log-tailer service image.
+#
+# Requires buildx with a pre-built builder image:
+#   docker buildx build -t smart-cicd-builder:local . --push
+#   docker buildx build \
+#       --build-context smart-cicd-builder=docker-image://smart-cicd-builder:local \
+#       -f services/watcher/Dockerfile.log-tailer \
+#       -t ghcr.io/bolinz/smart-cicd/log-tailer:$TAG .
+#
+# Simpler local build (no buildx required):
+#   docker build --target runtime-watcher-log -f Dockerfile -t smart-cicd/log-tailer:local .
+
+FROM gcr.io/distroless/nodejs20-debian11 AS runtime
+WORKDIR /app
+COPY --from=smart-cicd-builder /app/dist/services/watcher/log-tailer.js ./
+COPY --from=smart-cicd-builder /app/dist/services/watcher/types.js ./
+COPY --from=smart-cicd-builder /app/dist/services/watcher/normalizer.js ./
+COPY --from=smart-cicd-builder /app/dist/services/watcher/event-emitter.js ./
+COPY --from=smart-cicd-builder /app/package.json ./
+COPY --from=smart-cicd-builder /app/node_modules ./node_modules
+ENV NODE_ENV=production
+CMD ["log-tailer.js"]

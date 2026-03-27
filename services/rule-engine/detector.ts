@@ -1,4 +1,4 @@
-import type { RuleResult, RuleEvaluator, DetectionContext } from './types';
+import type { RuleResult, RuleEvaluator, DetectionContext } from './types.js';
 import {
   stuckStepRule,
   repeatedErrorRule,
@@ -7,7 +7,7 @@ import {
   resourcePressureRule,
   pullBackoffRule,
   schedulingFailureRule,
-} from './rules';
+} from './rules.js';
 
 /** All rule evaluators, evaluated in order */
 const ALL_RULES: RuleEvaluator[] = [

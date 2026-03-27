@@ -1,5 +1,5 @@
-import type { RuleEvaluator, RuleResult, DetectionContext } from './types';
-import type { RuntimeEvent } from '../watcher/types';
+import type { RuleEvaluator, RuleResult, DetectionContext } from './types.js';
+import type { RuntimeEvent } from '../watcher/types.js';
 
 /** Threshold constants */
 const STUCK_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes

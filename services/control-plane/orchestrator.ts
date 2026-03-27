@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import type { RuntimeEvent } from '../watcher/types';
-import type { EventSink } from '../watcher/event-emitter';
+import type { RuntimeEvent } from '../watcher/types.js';
+import type { EventSink } from '../watcher/event-emitter.js';
 import type {
   PipelineSpec,
   PipelineRun,
@@ -10,13 +10,13 @@ import type {
   StepStatus,
   RiskLevel,
   ActionType,
-} from './types';
-import type { RuleResult } from '../rule-engine/types';
-import type { DiagnosisRecord } from '../ai-supervisor/types';
-import type { CandidateAction, InterventionRecord } from '../action-engine/types';
-import { compileSpec } from './spec-compiler';
-import { RunnerManager } from './runner-manager';
-import { evaluateAllRules, escalateResults } from '../rule-engine';
+} from './types.js';
+import type { RuleResult } from '../rule-engine/types.js';
+import type { DiagnosisRecord } from '../ai-supervisor/types.js';
+import type { CandidateAction, InterventionRecord } from '../action-engine/types.js';
+import { compileSpec } from './spec-compiler.js';
+import { RunnerManager } from './runner-manager.js';
+import { evaluateAllRules, escalateResults } from '../rule-engine/index.js';
 
 const DEFAULT_NAMESPACE = 'default';
 

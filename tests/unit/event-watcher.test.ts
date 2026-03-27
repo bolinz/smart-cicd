@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeK8sEventSignal } from '../../services/watcher/normalizer';
-import type { K8sEventSignal } from '../../services/watcher/types';
-import { EventWatcher } from '../../services/watcher/event-watcher';
-import { NullEventSink } from '../../services/watcher/event-emitter';
+import { normalizeK8sEventSignal } from '../../services/watcher/normalizer.js';
+import type { K8sEventSignal } from '../../services/watcher/types.js';
+import { EventWatcher } from '../../services/watcher/event-watcher.js';
+import { NullEventSink } from '../../services/watcher/event-emitter.js';
 import type { CoreV1Api, Watch, KubernetesObject } from '@kubernetes/client-node';
 
 function makeK8sEventSignal(overrides: Partial<K8sEventSignal> = {}): K8sEventSignal {

@@ -1,6 +1,6 @@
 // Core types for action-engine
 
-import type { ActionType, PipelineRun } from '../control-plane/types';
+import type { ActionType, PipelineRun } from '../control-plane/types.js';
 
 export type ActionStatus = 'pending' | 'approved' | 'denied' | 'executing' | 'succeeded' | 'failed';
 

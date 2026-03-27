@@ -1,0 +1,18 @@
+.git
+.gitignore
+*.md
+!package.json
+!package-lock.json
+node_modules
+dist
+.claude
+.env
+.env.*
+*.log
+.DS_Store
+*.tgz
+.github
+docs
+specs
+tests
+ Makefile

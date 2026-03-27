@@ -1,7 +1,7 @@
 import type { CoreV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
-import type { K8sEventSignal } from './types';
-import { normalizeK8sEventSignal } from './normalizer';
-import type { EventSink } from './event-emitter';
+import type { K8sEventSignal } from './types.js';
+import { normalizeK8sEventSignal } from './normalizer.js';
+import type { EventSink } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 

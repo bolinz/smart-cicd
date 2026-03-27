@@ -1,9 +1,9 @@
-export { compileSpec } from './spec-compiler';
-export type { CompileResult } from './spec-compiler';
-export { RunnerManager } from './runner-manager';
-export type { RunnerManagerConfig, JobSpec } from './runner-manager';
-export { RunOrchestrator } from './orchestrator';
-export type { AisSupervisorStub, ActionEngineStub } from './orchestrator';
+export { compileSpec } from './spec-compiler.js';
+export type { CompileResult } from './spec-compiler.js';
+export { RunnerManager } from './runner-manager.js';
+export type { RunnerManagerConfig, JobSpec } from './runner-manager.js';
+export { RunOrchestrator } from './orchestrator.js';
+export type { AisSupervisorStub, ActionEngineStub } from './orchestrator.js';
 export type {
   RunStatus,
   StepStatus,
@@ -18,4 +18,4 @@ export type {
   StepRun,
   RiskLevel,
   ActionType,
-} from './types';
+} from './types.js';

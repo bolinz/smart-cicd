@@ -1,7 +1,7 @@
 import type { BatchV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
-import type { JobSignal, JobPhase } from './types';
-import { normalizeJobSignal } from './normalizer';
-import type { EventSink } from './event-emitter';
+import type { JobSignal, JobPhase } from './types.js';
+import { normalizeJobSignal } from './normalizer.js';
+import type { EventSink } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 

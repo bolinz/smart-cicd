@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { v4 as uuid } from 'uuid';
-import type { PipelineSpec, GraphStep, RunStatus, StepStatus, RiskLevel } from '../../services/control-plane/types';
-import type { RuntimeEvent } from '../../services/watcher/types';
-import type { RuleResult } from '../../services/rule-engine/types';
-import type { DiagnosisRecord } from '../../services/ai-supervisor/types';
-import type { InterventionRecord } from '../../services/action-engine/types';
-import type { CandidateAction } from '../../services/action-engine/types';
-import { compileSpec } from '../../services/control-plane/spec-compiler';
-import { RunnerManager } from '../../services/control-plane/runner-manager';
-import { RunOrchestrator } from '../../services/control-plane/orchestrator';
-import type { AisSupervisorStub, ActionEngineStub } from '../../services/control-plane/orchestrator';
+import type { PipelineSpec, GraphStep, RunStatus, StepStatus, RiskLevel } from '../../services/control-plane/types.js';
+import type { RuntimeEvent } from '../../services/watcher/types.js';
+import type { RuleResult } from '../../services/rule-engine/types.js';
+import type { DiagnosisRecord } from '../../services/ai-supervisor/types.js';
+import type { InterventionRecord } from '../../services/action-engine/types.js';
+import type { CandidateAction } from '../../services/action-engine/types.js';
+import { compileSpec } from '../../services/control-plane/spec-compiler.js';
+import { RunnerManager } from '../../services/control-plane/runner-manager.js';
+import { RunOrchestrator } from '../../services/control-plane/orchestrator.js';
+import type { AisSupervisorStub, ActionEngineStub } from '../../services/control-plane/orchestrator.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
