@@ -436,4 +436,14 @@ export class RunOrchestrator implements EventSink {
   getActiveEvents(runId: string): RuntimeEvent[] {
     return this.eventBuffers.get(runId) ?? [];
   }
+
+  getStepCount(runId: string): number {
+    return this.runs.get(runId)?.graph.steps.length ?? 0;
+  }
+
+  getCurrentStepRun(runId: string): StepRun | undefined {
+    const run = this.store.getRun(runId);
+    if (!run?.currentStepId) return undefined;
+    return this.store.getStepRunsForRun(runId).find((sr) => sr.stepId === run.currentStepId);
+  }
 }
