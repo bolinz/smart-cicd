@@ -1,4 +1,4 @@
-import type { RuntimeEvent } from './types';
+import type { RuntimeEvent } from './types.js';
 
 /**
  * EventSink is the interface through which downstream components receive

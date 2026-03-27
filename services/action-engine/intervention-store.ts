@@ -1,6 +1,6 @@
 // In-memory store for InterventionRecord
 
-import type { InterventionRecord } from './types';
+import type { InterventionRecord } from './types.js';
 
 export class InterventionStore {
   private readonly records: InterventionRecord[] = [];

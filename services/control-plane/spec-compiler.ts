@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import type { PipelineSpec, RunGraph, GraphStep, ActionType } from './types';
+import type { PipelineSpec, RunGraph, GraphStep, ActionType } from './types.js';
 
 /**
  * All action types are eligible for every step in the MVP.

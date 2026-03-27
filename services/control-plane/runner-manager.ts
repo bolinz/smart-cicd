@@ -1,5 +1,5 @@
 import type { BatchV1Api, CoreV1Api } from '@kubernetes/client-node';
-import type { GraphStep, PipelineRun, StepRun, RetryPolicy } from './types';
+import type { GraphStep, PipelineRun, StepRun, RetryPolicy } from './types.js';
 
 /** Default namespace if none specified */
 const DEFAULT_NAMESPACE = 'default';

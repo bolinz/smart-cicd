@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { normalizeLogSignal } from '../../services/watcher/normalizer';
-import type { LogSignal } from '../../services/watcher/types';
-import { LogTailer } from '../../services/watcher/log-tailer';
-import { NullEventSink } from '../../services/watcher/event-emitter';
+import { normalizeLogSignal } from '../../services/watcher/normalizer.js';
+import type { LogSignal } from '../../services/watcher/types.js';
+import { LogTailer } from '../../services/watcher/log-tailer.js';
+import { NullEventSink } from '../../services/watcher/event-emitter.js';
 
 // ─── normalizeLogSignal ────────────────────────────────────────────────────────
 
@@ -159,7 +159,7 @@ describe('LogTailer', () => {
     vi.spyOn(capturingTailer as any, 'poll').mockImplementation(async () => {
       // manually emit one log line
       capturingTailer['lastTimestamp'] = undefined;
-      const { normalizeLogSignal } = await import('../../services/watcher/normalizer');
+      const { normalizeLogSignal } = await import('../../services/watcher/normalizer.js');
       captureSink.emit(
         normalizeLogSignal({
           podName: 'test-pod',

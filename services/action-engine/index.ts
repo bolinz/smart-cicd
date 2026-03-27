@@ -1,22 +1,22 @@
 // Action Engine - the ONLY component allowed to execute runtime interventions
 
 import { v4 as uuid } from 'uuid';
-import type { CandidateAction, InterventionRecord } from './types';
-import { PolicyStore } from './policy-store';
-import { ActionValidator } from './validator';
-import { InterventionStore } from './intervention-store';
-import { InterventionExecutor, type ActionDeps } from './executor';
+import type { CandidateAction, InterventionRecord } from './types.js';
+import { PolicyStore } from './policy-store.js';
+import { ActionValidator } from './validator.js';
+import { InterventionStore } from './intervention-store.js';
+import { InterventionExecutor, type ActionDeps } from './executor.js';
 
 // Re-export types for consumers
-export type { ActionStatus, InterventionRecord, ActionResult, CandidateAction, InterventionRequest, InterventionResponse, ActionLimits } from './types';
+export type { ActionStatus, InterventionRecord, ActionResult, CandidateAction, InterventionRequest, InterventionResponse, ActionLimits } from './types.js';
 
 // Re-export for testing
-export { PolicyStore } from './policy-store';
-export { ActionValidator } from './validator';
-export type { PolicyDecision } from './validator';
-export { InterventionStore } from './intervention-store';
-export { InterventionExecutor } from './executor';
-export type { ActionDeps } from './executor';
+export { PolicyStore } from './policy-store.js';
+export { ActionValidator } from './validator.js';
+export type { PolicyDecision } from './validator.js';
+export { InterventionStore } from './intervention-store.js';
+export { InterventionExecutor } from './executor.js';
+export type { ActionDeps } from './executor.js';
 
 /**
  * Creates an ActionEngineStub that the RunOrchestrator expects.

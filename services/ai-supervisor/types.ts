@@ -1,7 +1,7 @@
 // Core types for ai-supervisor
 
-import type { RuntimeEvent } from '../watcher/types';
-import type { ActionType } from '../control-plane/types';
+import type { RuntimeEvent } from '../watcher/types.js';
+import type { ActionType } from '../control-plane/types.js';
 
 export type DiagnosisSource = 'rule-engine' | 'ai-supervisor';
 

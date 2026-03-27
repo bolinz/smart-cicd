@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePodSignal } from '../../services/watcher/normalizer';
-import type { PodSignal } from '../../services/watcher/types';
-import { PodWatcher } from '../../services/watcher/pod-watcher';
-import { NullEventSink } from '../../services/watcher/event-emitter';
+import { normalizePodSignal } from '../../services/watcher/normalizer.js';
+import type { PodSignal } from '../../services/watcher/types.js';
+import { PodWatcher } from '../../services/watcher/pod-watcher.js';
+import { NullEventSink } from '../../services/watcher/event-emitter.js';
 import type { CoreV1Api, Watch, KubernetesObject } from '@kubernetes/client-node';
 
 function makePodSignal(overrides: Partial<PodSignal> = {}): PodSignal {

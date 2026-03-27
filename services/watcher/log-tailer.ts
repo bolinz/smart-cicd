@@ -1,7 +1,7 @@
 import type { CoreV1Api } from '@kubernetes/client-node';
-import type { LogSignal } from './types';
-import { normalizeLogSignal } from './normalizer';
-import type { EventSink } from './event-emitter';
+import type { LogSignal } from './types.js';
+import { normalizeLogSignal } from './normalizer.js';
+import type { EventSink } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 const DEFAULT_POLL_INTERVAL_MS = 2000;

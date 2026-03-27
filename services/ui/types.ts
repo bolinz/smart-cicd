@@ -1,9 +1,9 @@
 // Core types for ui
 
-import type { PipelineRun, StepRun } from '../control-plane/types';
-import type { RuntimeEvent } from '../watcher/types';
-import type { DiagnosisRecord } from '../ai-supervisor/types';
-import type { InterventionRecord } from '../action-engine/types';
+import type { PipelineRun, StepRun } from '../control-plane/types.js';
+import type { RuntimeEvent } from '../watcher/types.js';
+import type { DiagnosisRecord } from '../ai-supervisor/types.js';
+import type { InterventionRecord } from '../action-engine/types.js';
 
 export interface RunView {
   run: PipelineRun;

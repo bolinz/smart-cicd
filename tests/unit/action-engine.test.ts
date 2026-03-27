@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PolicyStore } from '../../services/action-engine/policy-store';
-import { ActionValidator } from '../../services/action-engine/validator';
-import { InterventionStore } from '../../services/action-engine/intervention-store';
-import type { CandidateAction, InterventionRecord } from '../../services/action-engine/types';
-import type { ActionType, PipelineRun } from '../../services/control-plane/types';
-import type { PolicyDecision } from '../../services/action-engine/validator';
+import { PolicyStore } from '../../services/action-engine/policy-store.js';
+import { ActionValidator } from '../../services/action-engine/validator.js';
+import { InterventionStore } from '../../services/action-engine/intervention-store.js';
+import type { CandidateAction, InterventionRecord } from '../../services/action-engine/types.js';
+import type { ActionType, PipelineRun } from '../../services/control-plane/types.js';
+import type { PolicyDecision } from '../../services/action-engine/validator.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -237,7 +237,7 @@ describe('InterventionExecutor', () => {
     // We can't directly test the executor without a real k8sApi,
     // but we can verify the routing by checking the switch is exhaustive
     // For unit tests, we test via the createActionEngine helper
-    const { createActionEngine } = await import('../../services/action-engine/index');
+    const { createActionEngine } = await import('../../services/action-engine/index.js');
 
     let called = false;
     const engine = createActionEngine({

@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal, K8sEventSignal, LogSignal } from './types';
+import type { PodSignal, RuntimeEvent, PodEventKind, JobSignal, K8sEventSignal, LogSignal } from './types.js';
 
 function severityFromPhase(
   phase: PodSignal['phase'],

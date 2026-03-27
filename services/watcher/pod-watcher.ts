@@ -1,7 +1,7 @@
 import type { CoreV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
-import type { PodWatcherConfig, PodSignal, PodPhase } from './types';
-import { normalizePodSignal } from './normalizer';
-import type { EventSink } from './event-emitter';
+import type { PodWatcherConfig, PodSignal, PodPhase } from './types.js';
+import { normalizePodSignal } from './normalizer.js';
+import type { EventSink } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 
