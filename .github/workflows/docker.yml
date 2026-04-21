@@ -50,6 +50,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:branch-${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:branch-${{ replace(github.ref_name, '/', '-') }}-${{ github.run_id }}
           cache-from: type=gha,scope=${{ matrix.service.name }}-${{ github.sha }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-${{ github.sha }}
