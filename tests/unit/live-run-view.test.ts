@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { PipelineRun, RunGraph, RunStatus } from '../../services/control-plane/types.js';
+import type { PipelineRun, RunGraph, RunStatus, StepStatus } from '../../services/control-plane/types.js';
 import type { RuntimeEvent } from '../../services/watcher/types.js';
 import { createLiveRunViewServer } from '../../services/ui/index.js';
 import type { RunOrchestrator } from '../../services/control-plane/orchestrator.js';
@@ -7,14 +7,20 @@ import http from 'node:http';
 
 // ─── Mock orchestrator ─────────────────────────────────────────────────────────
 
-interface MockOrchestrator extends RunOrchestrator {
+interface MockOrchestrator {
+  getRun(runId: string): PipelineRun | undefined;
+  getStepRuns(runId: string): Array<{ id: string; runId: string; stepId: string; status: StepStatus; attemptNumber: number }>;
+  getActiveEvents(runId: string): RuntimeEvent[];
+  getStepCount(runId: string): number;
+  getCurrentStepRun(runId: string): { id: string; runId: string; stepId: string; status: StepStatus; attemptNumber: number } | undefined;
+  subscribe(listener: (run: PipelineRun) => void): () => boolean;
   _addRun(run: PipelineRun, graph: RunGraph, events?: RuntimeEvent[]): void;
   _notify(runId: string): void;
 }
 
 function makeMockOrchestrator(): MockOrchestrator {
   const runs = new Map<string, PipelineRun>();
-  const stepRunsMap = new Map<string, Array<{ id: string; runId: string; stepId: string; status: RunStatus; attemptNumber: number }>>();
+  const stepRunsMap = new Map<string, Array<{ id: string; runId: string; stepId: string; status: StepStatus; attemptNumber: number }>>();
   const eventsMap = new Map<string, RuntimeEvent[]>();
   const graphMap = new Map<string, RunGraph>();
   const listeners = new Set<(run: PipelineRun) => void>();
@@ -47,8 +53,8 @@ function makeMockOrchestrator(): MockOrchestrator {
       graphMap.set(run.id, graph);
       eventsMap.set(run.id, events);
       stepRunsMap.set(run.id, [
-        { id: `${run.id}-step1`, runId: run.id, stepId: 'step1', status: 'running' as RunStatus, attemptNumber: 1 },
-        { id: `${run.id}-step2`, runId: run.id, stepId: 'step2', status: 'pending' as RunStatus, attemptNumber: 1 },
+        { id: `${run.id}-step1`, runId: run.id, stepId: 'step1', status: 'running' as StepStatus, attemptNumber: 1 },
+        { id: `${run.id}-step2`, runId: run.id, stepId: 'step2', status: 'pending' as StepStatus, attemptNumber: 1 },
       ]);
     },
     _notify(runId: string) {
@@ -133,7 +139,7 @@ describe('LiveRunView', { sequential: true }, () => {
 
   beforeEach(() => {
     orchestrator = makeMockOrchestrator();
-    server = createLiveRunViewServer(orchestrator, { port: PORT });
+    server = createLiveRunViewServer(orchestrator as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: PORT });
   });
 
   afterEach(() => {
@@ -207,7 +213,7 @@ describe('LiveRunView', { sequential: true }, () => {
     server.close();
     const limitedOrch = makeMockOrchestrator();
     limitedOrch._addRun(run, BASE_GRAPH, events);
-    server = createLiveRunViewServer(limitedOrch, { port: PORT, maxRecentEvents: 2 });
+    server = createLiveRunViewServer(limitedOrch as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: PORT, maxRecentEvents: 2 });
 
     const res = await httpGet('/runs/run-limit');
     expect(res.status).toBe(200);

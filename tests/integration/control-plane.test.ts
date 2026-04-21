@@ -11,7 +11,7 @@
 //   - Run cancellation
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { PipelineSpec, PipelineRun } from '../../services/control-plane/types.js';
+import type { PipelineSpec, PipelineRun, ActionType } from '../../services/control-plane/types.js';
 import { RunOrchestrator } from '../../services/control-plane/orchestrator.js';
 import { createAisSupervisor } from '../../services/ai-supervisor/index.js';
 import type { AisSupervisorStub } from '../../services/control-plane/orchestrator.js';
@@ -99,7 +99,7 @@ class MockActionEngine implements ActionEngineStub {
       id: `ir-${this.interventionRecords.length}`,
       runId: opts.runId,
       stepId: opts.stepId,
-      actionType: opts.candidate.action,
+      actionType: opts.candidate.action as ActionType,
       actionParameters: opts.candidate.parameters ?? {},
       policyDecision: 'allowed' as const,
       triggerReason: opts.candidate.reason,

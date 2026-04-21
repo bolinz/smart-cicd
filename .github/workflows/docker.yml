@@ -25,6 +25,7 @@ jobs:
           - { name: action-engine, target: runtime-action-engine }
           - { name: ai-supervisor, target: runtime-ai-supervisor }
           - { name: ui, target: runtime-ui }
+          - { name: api-server, target: runtime-api-server }
 
     steps:
       - uses: actions/checkout@v4
