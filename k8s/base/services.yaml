@@ -1,0 +1,131 @@
+# Internal cluster services for smart-cicd components
+# These services allow components to communicate via DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: control-plane
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rule-engine
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: rule-engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-supervisor
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: ai-supervisor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: action-engine
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: action-engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: ui
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-watcher
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: pod-watcher
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-watcher
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: job-watcher
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-watcher
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: event-watcher
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-tailer
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: log-tailer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-server
+  namespace: smart-cicd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: api-server

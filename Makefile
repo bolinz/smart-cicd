@@ -25,6 +25,8 @@ build-services: build-builder
 	docker build --target runtime-ai-supervisor -f Dockerfile -t $(REGISTRY)/ai-supervisor:$(GIT_SHA) .
 	@echo "Building ui..."
 	docker build --target runtime-ui -f Dockerfile -t $(REGISTRY)/ui:$(GIT_SHA) .
+	@echo "Building api-server..."
+	docker build --target runtime-api-server -f Dockerfile -t $(REGISTRY)/api-server:$(GIT_SHA) .
 	@echo "All service images built."
 
 # Build root builder stage (TypeScript compilation)
@@ -43,6 +45,7 @@ build-service:
 		action-engine) TARGET=runtime-action-engine   ;; \
 		ai-supervisor) TARGET=runtime-ai-supervisor  ;; \
 		ui)            TARGET=runtime-ui              ;; \
+		api-server)    TARGET=runtime-api-server     ;; \
 		*) echo "Unknown SERVICE=$(SERVICE)"; exit 1 ;; \
 	esac
 	docker build --target $$TARGET -f Dockerfile -t $(REGISTRY)/$(SERVICE):$(GIT_SHA) .
@@ -60,12 +63,13 @@ push-services: build-services
 	docker push $(REGISTRY)/action-engine:$(GIT_SHA)
 	docker push $(REGISTRY)/ai-supervisor:$(GIT_SHA)
 	docker push $(REGISTRY)/ui:$(GIT_SHA)
+	docker push $(REGISTRY)/api-server:$(GIT_SHA)
 	@echo "All images pushed."
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 
 clean:
-	@for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui; do \
+	@for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui api-server; do \
 		docker rmi $(REGISTRY)/$$svc:$(GIT_SHA) 2>/dev/null || true; \
 	done
 	docker rmi smart-cicd-builder:$(GIT_SHA) 2>/dev/null || true
@@ -76,4 +80,4 @@ clean:
 info:
 	@echo "Registry: $(REGISTRY)"
 	@echo "Git SHA:  $(GIT_SHA)"
-	@echo "Services: pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui"
+	@echo "Services: pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui api-server"

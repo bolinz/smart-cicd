@@ -6,6 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.config.e2e.ts",
+    "test:e2e:watch": "vitest --config vitest.config.e2e.ts",
     "typecheck": "tsc --noEmit",
     "release:version": "changeset version",
     "release:publish": "echo 'Publishing to GitHub Releases only - no npm publish'"
