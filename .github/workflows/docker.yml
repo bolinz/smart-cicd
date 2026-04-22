@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -25,6 +29,7 @@ jobs:
           - { name: action-engine, target: runtime-action-engine }
           - { name: ai-supervisor, target: runtime-ai-supervisor }
           - { name: ui, target: runtime-ui }
+          - { name: api-server, target: runtime-api-server }
 
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +54,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:branch-${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/smart-cicd/${{ matrix.service.name }}:branch-${{ replace(github.ref_name, '/', '-') }}-${{ github.run_id }}
           cache-from: type=gha,scope=${{ matrix.service.name }}-${{ github.sha }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-${{ github.sha }}

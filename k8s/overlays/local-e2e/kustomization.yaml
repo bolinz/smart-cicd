@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: smart-cicd
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/configmaps.yaml
+  - ../../base/services.yaml
+  - ../../base/deployments.yaml
+images:
+  - name: pod-watcher
+    newName: localhost:5000/pod-watcher
+    newTag: 1cb1edf
+  - name: job-watcher
+    newName: localhost:5000/job-watcher
+    newTag: 1cb1edf
+  - name: event-watcher
+    newName: localhost:5000/event-watcher
+    newTag: 1cb1edf
+  - name: log-tailer
+    newName: localhost:5000/log-tailer
+    newTag: 1cb1edf
+  - name: rule-engine
+    newName: localhost:5000/rule-engine
+    newTag: 1cb1edf
+  - name: ai-supervisor
+    newName: localhost:5000/ai-supervisor
+    newTag: 1cb1edf
+  - name: action-engine
+    newName: localhost:5000/action-engine
+    newTag: 1cb1edf
+  - name: control-plane
+    newName: localhost:5000/control-plane
+    newTag: 1cb1edf
+  - name: ui
+    newName: localhost:5000/ui
+    newTag: 1cb1edf
+  - name: api-server
+    newName: localhost:5000/api-server
+    newTag: 1cb1edf

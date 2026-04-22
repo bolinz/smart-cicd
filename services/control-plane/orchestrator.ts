@@ -446,4 +446,11 @@ export class RunOrchestrator implements EventSink {
     if (!run?.currentStepId) return undefined;
     return this.store.getStepRunsForRun(runId).find((sr) => sr.stepId === run.currentStepId);
   }
+
+  /**
+   * Get all runs.
+   */
+  getAllRuns(): PipelineRun[] {
+    return Array.from(this.store.runs.values());
+  }
 }

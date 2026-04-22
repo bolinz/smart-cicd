@@ -109,3 +109,16 @@ COPY --from=builder /app/node_modules /app/node_modules
 WORKDIR /app
 ENV NODE_ENV=production
 CMD ["index.js"]
+
+FROM gcr.io/distroless/nodejs20-debian11 AS runtime-api-server
+COPY --from=builder /app/dist/services/api-server /app/
+COPY --from=builder /app/dist/services/control-plane /app/
+COPY --from=builder /app/dist/services/ai-supervisor /app/
+COPY --from=builder /app/dist/services/action-engine /app/
+COPY --from=builder /app/dist/services/watcher /app/
+COPY --from=builder /app/dist/services/rule-engine /app/
+COPY --from=builder /app/package.json /app/
+COPY --from=builder /app/node_modules /app/node_modules
+WORKDIR /app
+ENV NODE_ENV=production
+CMD ["index.js"]

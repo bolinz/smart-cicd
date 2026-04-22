@@ -1,0 +1,285 @@
+# Deployments for all smart-cicd services
+# Each service runs as a separate Deployment
+
+---
+# Pod Watcher - watches Kubernetes pods for pipeline runs
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-watcher
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pod-watcher
+  template:
+    metadata:
+      labels:
+        app: pod-watcher
+    spec:
+      containers:
+        - name: pod-watcher
+          image: pod-watcher:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+            - name: LABEL_KEY
+              value: "run_id"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Job Watcher - watches Kubernetes jobs for pipeline runs
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-watcher
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: job-watcher
+  template:
+    metadata:
+      labels:
+        app: job-watcher
+    spec:
+      containers:
+        - name: job-watcher
+          image: job-watcher:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+            - name: LABEL_KEY
+              value: "run_id"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Event Watcher - watches Kubernetes events for pipeline runs
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-watcher
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-watcher
+  template:
+    metadata:
+      labels:
+        app: event-watcher
+    spec:
+      containers:
+        - name: event-watcher
+          image: event-watcher:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+            - name: LABEL_KEY
+              value: "run_id"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Log Tailer - tails logs from runner pods
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-tailer
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-tailer
+  template:
+    metadata:
+      labels:
+        app: log-tailer
+    spec:
+      containers:
+        - name: log-tailer
+          image: log-tailer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+            - name: LABEL_KEY
+              value: "run_id"
+            - name: POLL_INTERVAL_MS
+              value: "2000"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Rule Engine - deterministic anomaly detection
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rule-engine
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rule-engine
+  template:
+    metadata:
+      labels:
+        app: rule-engine
+    spec:
+      containers:
+        - name: rule-engine
+          image: rule-engine:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# AI Supervisor - AI-assisted diagnosis and action ranking
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-supervisor
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-supervisor
+  template:
+    metadata:
+      labels:
+        app: ai-supervisor
+    spec:
+      containers:
+        - name: ai-supervisor
+          image: ai-supervisor:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Action Engine - policy-gated intervention execution
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: action-engine
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: action-engine
+  template:
+    metadata:
+      labels:
+        app: action-engine
+    spec:
+      containers:
+        - name: action-engine
+          image: action-engine:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# Control Plane - run orchestration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: control-plane
+  template:
+    metadata:
+      labels:
+        app: control-plane
+    spec:
+      containers:
+        - name: control-plane
+          image: control-plane:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+            - name: SERVICE_PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# UI - Live run view with SSE streaming
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      containers:
+        - name: ui
+          image: ui:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
+---
+# API Server - HTTP API for e2e testing
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: smart-cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+    spec:
+      containers:
+        - name: api-server
+          image: api-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICE_PORT
+              value: "8080"
+            - name: KUBERNETES_NAMESPACE
+              value: "smart-cicd"
+          envFrom:
+            - configMapRef:
+                name: smart-cicd-config
