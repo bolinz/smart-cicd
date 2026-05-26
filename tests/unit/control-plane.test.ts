@@ -162,6 +162,18 @@ describe('compileSpec', () => {
     const { graph } = compileSpec(spec);
     expect(graph.steps[0].stageId).toBe('my-stage');
   });
+
+  it('returns errors for circular stage dependencies', () => {
+    const spec = makeSpec({
+      stages: [
+        { id: 'a', name: 'A', steps: [{ id: 's1', name: 'S1', image: 'img', commands: ['echo'] }], dependsOn: ['c'] },
+        { id: 'b', name: 'B', steps: [{ id: 's2', name: 'S2', image: 'img', commands: ['echo'] }], dependsOn: ['a'] },
+        { id: 'c', name: 'C', steps: [{ id: 's3', name: 'S3', image: 'img', commands: ['echo'] }], dependsOn: ['b'] },
+      ],
+    });
+    const { errors } = compileSpec(spec);
+    expect(errors.some((e) => e.includes('circular dependency'))).toBe(true);
+  });
 });
 
 // ─── RunnerManager ─────────────────────────────────────────────────────────────

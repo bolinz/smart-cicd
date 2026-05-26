@@ -65,7 +65,7 @@ export class LogTailer {
         this.config.podName,
         this.config.namespace,
         this.config.containerName,
-        false,      // follow — single-shot fetch
+        false,      // don't follow (single-shot fetch)
         false,      // insecureSkipTLSVerifyBackend
         undefined,  // limitBytes
         undefined,  // pretty

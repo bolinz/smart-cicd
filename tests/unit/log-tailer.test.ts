@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { normalizeLogSignal } from '../../services/watcher/normalizer.js';
 import type { LogSignal } from '../../services/watcher/types.js';
 import { LogTailer } from '../../services/watcher/log-tailer.js';
-import { NullEventSink } from '../../services/watcher/event-emitter.js';
+
 
 // ─── normalizeLogSignal ────────────────────────────────────────────────────────
 
