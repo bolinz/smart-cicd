@@ -55,9 +55,14 @@ async function main(): Promise<void> {
   // Create action engine with K8s executor
   const actionEngineDeps: ActionDeps = {
     k8sApi,
-    // Noop callbacks - the orchestrator handles intervention callbacks
-    onRerunStep: () => {},
-    onStopRun: () => {},
+    onRerunStep: (runId: string, stepId: string) => {
+      orchestrator.scheduleStep(runId, stepId).catch((err: unknown) => {
+        console.error('[api-server] scheduleStep failed:', err);
+      });
+    },
+    onStopRun: (runId: string) => {
+      orchestrator.cancelRun(runId);
+    },
   };
   const actionEngine = createActionEngine(actionEngineDeps);
 

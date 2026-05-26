@@ -268,7 +268,7 @@ export class RunOrchestrator implements EventSink {
     this.checkRunCompletion(runId);
   }
 
-  private async scheduleStep(runId: string, stepId: string): Promise<void> {
+  public async scheduleStep(runId: string, stepId: string): Promise<void> {
     const { graph, spec } = this.runs.get(runId) ?? {};
     const run = this.store.getRun(runId);
     if (!graph || !run) return;
