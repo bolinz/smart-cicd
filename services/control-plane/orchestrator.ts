@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import type { RuntimeEvent } from '../watcher/types.js';
-import type { EventSink } from '../watcher/event-emitter.js';
+import type { EventBus } from '../watcher/event-emitter.js';
 import type {
   PipelineSpec,
   PipelineRun,
@@ -16,7 +16,7 @@ import type { DiagnosisRecord } from '../ai-supervisor/types.js';
 import type { CandidateAction, InterventionRecord } from '../action-engine/types.js';
 import { compileSpec } from './spec-compiler.js';
 import { RunnerManager } from './runner-manager.js';
-import { evaluateAllRules, escalateResults } from '../rule-engine/index.js';
+
 
 const DEFAULT_NAMESPACE = 'default';
 
@@ -47,6 +47,15 @@ class RunStore {
   saveStepRun(stepRun: StepRun): void {
     this.stepRuns.set(stepRun.id, stepRun);
   }
+}
+
+export interface RuleEngineStub {
+  evaluate(ctx: {
+    events: RuntimeEvent[];
+    stepRunId?: string;
+    runId: string;
+  }): RuleResult[];
+  escalate(ruleResults: RuleResult[]): RuleResult[];
 }
 
 export interface AisSupervisorStub {
@@ -89,12 +98,12 @@ function stepStatusFromRunStatus(status: RunStatus): StepStatus {
  * - Create PipelineRun from PipelineSpec
  * - Compile spec to RunGraph via SpecCompiler
  * - Schedule steps as K8s Jobs via RunnerManager
- * - Wire watcher EventSink → rule-engine → ai-supervisor → action-engine
+ * - Wire watcher EventBus → rule-engine → ai-supervisor → action-engine
  * - Handle step completion / failure and advance PipelineRun
  * - Transition PipelineRun status: pending → running → succeeded/failed
  * - Persist run and step run state
  */
-export class RunOrchestrator implements EventSink {
+export class RunOrchestrator implements EventBus {
   private readonly store: RunStore;
   private readonly runs = new Map<string, { spec: PipelineSpec; graph: RunGraph }>();
 
@@ -103,6 +112,7 @@ export class RunOrchestrator implements EventSink {
 
   // Callbacks for live-view notifications
   private readonly listeners = new Set<(run: PipelineRun) => void>();
+  private readonly runListeners = new Map<string, Set<(run: PipelineRun) => void>>();
 
   constructor(
     private readonly config: { namespace?: string },
@@ -110,12 +120,13 @@ export class RunOrchestrator implements EventSink {
       runnerManager: RunnerManager;
       aisSupervisor: AisSupervisorStub;
       actionEngine: ActionEngineStub;
+      ruleEngine: RuleEngineStub;
     },
   ) {
     this.store = new RunStore();
   }
 
-  // ─── EventSink implementation ────────────────────────────────────────────────
+  // ─── EventBus implementation ────────────────────────────────────────────────
 
   /**
    * Receive normalized runtime events from watchers.
@@ -144,7 +155,7 @@ export class RunOrchestrator implements EventSink {
       stepRunId: run.currentStepId,
     };
 
-    const results = evaluateAllRules(ctx);
+    const results = this.deps.ruleEngine.evaluate(ctx);
     if (results.length === 0) return;
 
     // Update risk level
@@ -152,11 +163,11 @@ export class RunOrchestrator implements EventSink {
     if (newRisk !== run.riskLevel) {
       run.riskLevel = newRisk;
       this.store.saveRun(run);
-      this.notifyListeners();
+      this.notifyListeners(runId);
     }
 
     // Escalate to AI supervisor if any result has shouldEscalate
-    const escalated = escalateResults(results);
+    const escalated = this.deps.ruleEngine.escalate(results);
     if (escalated.length > 0) {
       this.escalateToAisSupervisor(runId, run.currentStepId, events, escalated);
     }
@@ -232,7 +243,7 @@ export class RunOrchestrator implements EventSink {
     run.status = 'running';
     run.startedAt = new Date().toISOString();
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
 
     return run;
   }
@@ -268,7 +279,7 @@ export class RunOrchestrator implements EventSink {
     this.checkRunCompletion(runId);
   }
 
-  private async scheduleStep(runId: string, stepId: string): Promise<void> {
+  public async scheduleStep(runId: string, stepId: string): Promise<void> {
     const { graph, spec } = this.runs.get(runId) ?? {};
     const run = this.store.getRun(runId);
     if (!graph || !run) return;
@@ -292,7 +303,7 @@ export class RunOrchestrator implements EventSink {
 
     run.currentStepId = stepId;
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
 
     const jobSpec = this.deps.runnerManager.createStepRun({
       run,
@@ -361,7 +372,7 @@ export class RunOrchestrator implements EventSink {
     run.finishedAt = new Date().toISOString();
     run.riskLevel = 'critical';
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
   }
 
   /**
@@ -391,7 +402,7 @@ export class RunOrchestrator implements EventSink {
       run.status = allSucceeded ? 'succeeded' : 'failed';
       run.finishedAt = new Date().toISOString();
       this.store.saveRun(run);
-      this.notifyListeners();
+      this.notifyListeners(runId);
     }
   }
 
@@ -404,23 +415,55 @@ export class RunOrchestrator implements EventSink {
     run.status = 'cancelled';
     run.finishedAt = new Date().toISOString();
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
   }
 
   // ─── Live-view ─────────────────────────────────────────────────────────────
 
   /**
    * Subscribe to run state changes for live-view updates.
+   * If runId is provided, listener only receives updates for that specific run.
    */
-  subscribe(listener: (run: PipelineRun) => void): () => void {
+  subscribe(listener: (run: PipelineRun) => void, runId?: string): () => void {
+    if (runId) {
+      let set = this.runListeners.get(runId);
+      if (!set) {
+        set = new Set();
+        this.runListeners.set(runId, set);
+      }
+      set.add(listener);
+      return () => {
+        set?.delete(listener);
+        if (set?.size === 0) {
+          this.runListeners.delete(runId);
+        }
+      };
+    }
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  private notifyListeners(): void {
-    for (const run of this.store.runs.values()) {
+  private notifyListeners(runId?: string): void {
+    if (runId) {
+      const run = this.store.getRun(runId);
+      if (!run) return;
+      // Notify global listeners about the specific changed run
       for (const listener of this.listeners) {
         listener(run);
+      }
+      // Notify run-scoped listeners
+      const set = this.runListeners.get(runId);
+      if (set) {
+        for (const listener of set) {
+          listener(run);
+        }
+      }
+    } else {
+      // No runId — notify global listeners about all runs (fallback)
+      for (const run of this.store.runs.values()) {
+        for (const listener of this.listeners) {
+          listener(run);
+        }
       }
     }
   }

@@ -21,14 +21,20 @@ export interface CompileResult {
 
 function topologicalSort(stageIds: string[], deps: Record<string, string[]>): string[] {
   const visited = new Set<string>();
+  const inProgress = new Set<string>();
   const result: string[] = [];
 
   function visit(id: string) {
     if (visited.has(id)) return;
-    visited.add(id);
+    if (inProgress.has(id)) {
+      throw new Error(`circular dependency: ${id}`);
+    }
+    inProgress.add(id);
     for (const dep of deps[id] ?? []) {
       visit(dep);
     }
+    inProgress.delete(id);
+    visited.add(id);
     result.push(id);
   }
 
@@ -116,8 +122,8 @@ export function compileSpec(spec: PipelineSpec): CompileResult {
   // Check for circular dependencies via topological sort
   try {
     topologicalSort(Array.from(stageIds), stageDeps);
-  } catch {
-    errors.push(`circular dependency detected involving stages`);
+  } catch (e) {
+    errors.push(`circular dependency detected involving stages: ${(e as Error).message}`);
   }
 
   if (errors.length > 0) {

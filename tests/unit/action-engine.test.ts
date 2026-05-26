@@ -242,6 +242,7 @@ describe('InterventionExecutor', () => {
     let called = false;
     const engine = createActionEngine({
       k8sApi: {} as any,
+      namespace: 'default',
       onRerunStep: () => { called = true; },
       onStopRun: () => {},
     });

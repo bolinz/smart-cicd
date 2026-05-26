@@ -20,6 +20,7 @@ import { RunnerManager } from '../control-plane/runner-manager.js';
 import { createAisSupervisor } from '../ai-supervisor/index.js';
 import { createActionEngine } from '../action-engine/index.js';
 import type { ActionDeps } from '../action-engine/executor.js';
+import { evaluateAllRules, escalateResults } from '../rule-engine/index.js';
 import { handleRoutes } from './routes.js';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -55,16 +56,22 @@ async function main(): Promise<void> {
   // Create action engine with K8s executor
   const actionEngineDeps: ActionDeps = {
     k8sApi,
-    // Noop callbacks - the orchestrator handles intervention callbacks
-    onRerunStep: () => {},
-    onStopRun: () => {},
+    namespace: NAMESPACE,
+    onRerunStep: (runId: string, stepId: string) => {
+      orchestrator.scheduleStep(runId, stepId).catch((err: unknown) => {
+        console.error('[api-server] scheduleStep failed:', err);
+      });
+    },
+    onStopRun: (runId: string) => {
+      orchestrator.cancelRun(runId);
+    },
   };
   const actionEngine = createActionEngine(actionEngineDeps);
 
   // Create orchestrator
   const orchestrator = new RunOrchestrator(
     { namespace: NAMESPACE },
-    { runnerManager, aisSupervisor, actionEngine },
+    { runnerManager, aisSupervisor, actionEngine, ruleEngine: { evaluate: evaluateAllRules, escalate: escalateResults } },
   );
 
   console.log(`[api-server] Orchestrator initialized`);

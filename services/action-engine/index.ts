@@ -27,7 +27,10 @@ export type { ActionDeps } from './executor.js';
  * 3. If allowed → executes the action via InterventionExecutor
  * 4. Records the full InterventionRecord with execution result
  */
-export function createActionEngine(deps: ActionDeps): {
+export function createActionEngine(
+  deps: ActionDeps,
+  policyYaml?: string,
+): {
   requestIntervention: (opts: {
     runId: string;
     stepId?: string;
@@ -36,7 +39,7 @@ export function createActionEngine(deps: ActionDeps): {
   }) => Promise<InterventionRecord>;
   interventions: InterventionStore;
 } {
-  const policy = new PolicyStore();
+  const policy = new PolicyStore(policyYaml);
   const interventions = new InterventionStore();
   const validator = new ActionValidator(policy, interventions);
   const executor = new InterventionExecutor(deps);

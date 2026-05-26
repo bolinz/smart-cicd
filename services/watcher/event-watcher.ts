@@ -1,7 +1,7 @@
 import type { CoreV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
 import type { K8sEventSignal } from './types.js';
 import { normalizeK8sEventSignal } from './normalizer.js';
-import type { EventSink } from './event-emitter.js';
+import type { EventBus } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 
@@ -20,7 +20,7 @@ export class EventWatcher {
   private readonly config: EventWatcherConfig;
   private readonly k8sApi: CoreV1Api;
   private readonly watch: Watch;
-  private readonly sink: EventSink;
+  private readonly sink: EventBus;
   private readonly labelKey: string;
 
   constructor(
@@ -28,7 +28,7 @@ export class EventWatcher {
     deps: {
       k8sApi: CoreV1Api;
       watch: Watch;
-      sink: EventSink;
+      sink: EventBus;
     },
   ) {
     this.config = config;
@@ -56,7 +56,7 @@ export class EventWatcher {
 
   /**
    * Starts watching Events in the configured namespace and emits normalized
-   * RuntimeEvents to the configured EventSink.
+   * RuntimeEvents to the configured EventBus.
    *
    * Returns a function that stops the watch when called.
    */

@@ -1,7 +1,3 @@
-// Loads and parses intervention-policy.yaml
-
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type { ActionType } from '../control-plane/types.js';
 import type { ActionLimits } from './types.js';
 
@@ -96,10 +92,22 @@ function parseYamlPolicy(content: string): RawPolicy {
 export class PolicyStore {
   private readonly policy: RawPolicy;
 
-  constructor(policyPath?: string) {
-    const path = policyPath ?? join(process.cwd(), 'specs', 'intervention-policy.yaml');
-    const content = readFileSync(path, 'utf-8');
-    this.policy = parseYamlPolicy(content);
+  constructor(policyYaml?: string) {
+    if (policyYaml) {
+      this.policy = parseYamlPolicy(policyYaml);
+    } else {
+      this.policy = {
+        allowed: ['rerun-step', 'clear-cache-and-rerun', 'restart-runner-pod', 'stop-run'],
+        guarded: ['increase-resources', 'adjust-timeout'],
+        forbidden: ['deploy-production', 'modify-rbac', 'rotate-secrets'],
+        limits: {
+          maxAttemptsPerStep: 3,
+          maxInterventionsPerRun: 5,
+          resourceBumpLimit: '2x',
+          timeoutAdjustmentLimitMs: 300000,
+        },
+      };
+    }
   }
 
   isAllowed(action: ActionType): boolean {

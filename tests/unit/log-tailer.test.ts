@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { normalizeLogSignal } from '../../services/watcher/normalizer.js';
 import type { LogSignal } from '../../services/watcher/types.js';
 import { LogTailer } from '../../services/watcher/log-tailer.js';
-import { NullEventSink } from '../../services/watcher/event-emitter.js';
+
 
 // ─── normalizeLogSignal ────────────────────────────────────────────────────────
 
@@ -122,13 +122,12 @@ describe('LogTailer', () => {
     readNamespacedPod: vi.fn(),
     readNamespacedPodLog: vi.fn(),
   } as any;
-  const mockSink = new NullEventSink();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('fetches run_id label from pod metadata', async () => {
+  it('emits log lines with run_id and step_id labels from pod metadata', async () => {
     mockK8sApi.readNamespacedPod.mockResolvedValue({
       body: {
         metadata: {
@@ -138,72 +137,53 @@ describe('LogTailer', () => {
         },
       },
     });
-    mockK8sApi.readNamespacedPodLog.mockResolvedValue({ body: '' });
-
-    const tailer = new LogTailer(
-      { podName: 'test-pod', containerName: 'main', namespace: 'default' },
-      { k8sApi: mockK8sApi, sink: mockSink },
-    );
+    mockK8sApi.readNamespacedPodLog.mockResolvedValue({
+      body: '2026-03-26T10:00:00.000Z stdout F hello\n2026-03-26T10:00:01.000Z stdout F world',
+    });
 
     const events: any[] = [];
-    const captureSink = {
-      emit: (e: any) => events.push(e),
-    } as any;
+    const captureSink = { emit: (e: any) => events.push(e) } as any;
 
-    const capturingTailer = new LogTailer(
+    const tailer = new LogTailer(
       { podName: 'test-pod', containerName: 'main', namespace: 'default' },
       { k8sApi: mockK8sApi, sink: captureSink },
     );
 
-    // Override poll to capture events synchronously
-    vi.spyOn(capturingTailer as any, 'poll').mockImplementation(async () => {
-      // manually emit one log line
-      capturingTailer['lastTimestamp'] = undefined;
-      const { normalizeLogSignal } = await import('../../services/watcher/normalizer.js');
-      captureSink.emit(
-        normalizeLogSignal({
-          podName: 'test-pod',
-          containerName: 'main',
-          namespace: 'default',
-          timestamp: '2026-03-26T10:00:00.000Z',
-          line: 'hello',
-          stream: 'stdout',
-          runId: 'run-456',
-          stepId: 'step-2',
-        }),
-      );
-    });
-
-    const stop = await capturingTailer.start();
+    const stop = await tailer.start();
     await new Promise((r) => setTimeout(r, 100));
     stop();
 
-    expect(events.length).toBeGreaterThan(0);
+    expect(events.length).toBe(2);
     expect(events[0].labels.run_id).toBe('run-456');
     expect(events[0].labels.step_id).toBe('step-2');
+    expect(events[0].labels.namespace).toBe('default');
   });
 
-  it('stop() prevents further polling', async () => {
+  it('stop() prevents log emission after abort', async () => {
     mockK8sApi.readNamespacedPod.mockResolvedValue({
       body: { metadata: { labels: {} } },
     });
-    let pollCount = 0;
-    mockK8sApi.readNamespacedPodLog.mockImplementation(() => {
-      pollCount++;
-      return Promise.resolve({ body: '' });
+
+    let resolveLogPromise!: (value: { body: string }) => void;
+    const logPromise = new Promise<{ body: string }>((resolve) => {
+      resolveLogPromise = resolve;
     });
+    mockK8sApi.readNamespacedPodLog.mockReturnValue(logPromise);
+
+    const events: any[] = [];
+    const captureSink = { emit: (e: any) => events.push(e) } as any;
 
     const tailer = new LogTailer(
-      { podName: 'test-pod', containerName: 'main', namespace: 'default', pollIntervalMs: 10 },
-      { k8sApi: mockK8sApi, sink: mockSink },
+      { podName: 'test-pod', containerName: 'main', namespace: 'default' },
+      { k8sApi: mockK8sApi, sink: captureSink },
     );
 
     const stop = await tailer.start();
-    await new Promise((r) => setTimeout(r, 50));
     stop();
-    const countAfterStop = pollCount;
-
+    resolveLogPromise({ body: 'should not be emitted' });
     await new Promise((r) => setTimeout(r, 50));
-    expect(pollCount).toBe(countAfterStop);
+
+    expect(mockK8sApi.readNamespacedPodLog).toHaveBeenCalled();
+    expect(events.length).toBe(0);
   });
 });

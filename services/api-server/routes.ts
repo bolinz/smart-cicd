@@ -144,7 +144,7 @@ export function handleRoutes(
         const updatedView = buildRunView(orchestrator, runId);
         sendSSE(res, 'run', updatedView);
       }
-    });
+    }, runId);
 
     // Heartbeat every 15s
     const heartbeat = setInterval(() => {
