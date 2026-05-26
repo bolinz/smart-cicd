@@ -1,50 +1,57 @@
 #!/bin/bash
 #
-# local-e2e-startup.sh - Start Colima Kubernetes cluster for e2e testing
+# local-e2e-startup.sh - Start local Kubernetes cluster for e2e testing
 #
 # This script:
-# 1. Verifies the current kubectl context is a Colima-created cluster
-# 2. Starts Colima with Kubernetes if not already running
-# 3. Starts a local Docker registry accessible from Colima VM
+# 1. Verifies the current kubectl context is a local cluster (Colima or kind)
+# 2. Starts Colima with Kubernetes if not already running (unless --skip-colima)
+# 3. Starts a local Docker registry accessible from the cluster VM
 # 4. Builds and pushes service images to the local registry
 # 5. Deploys services to the cluster
 #
-
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REGISTRY_PORT=5000
 
-echo "=== Verifying Colima Kubernetes cluster ==="
+SKIP_COLIMA=false
+if [[ "$1" == "--skip-colima" ]]; then
+  SKIP_COLIMA=true
+  shift
+fi
 
-# Function to check if current context is Colima
-is_colima_cluster() {
+echo "=== Verifying local Kubernetes cluster ==="
+
+# Function to check if current context is a local cluster (Colima or kind)
+is_local_cluster() {
   local context
   context=$(kubectl config current-context 2>/dev/null || echo "")
-  # Colima typically uses "colima" or "colima-<profile>" as context name
-  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]]
+  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]] || \
+  [[ "$context" == "kind" ]] || [[ "$context" == kind-* ]]
 }
 
-# Check if we're on a Colima cluster
-if ! is_colima_cluster; then
-  echo "ERROR: Current kubectl context is not a Colima cluster."
+# Check if we're on a local cluster
+if ! is_local_cluster; then
+  echo "ERROR: Current kubectl context is not a local cluster."
   echo "Current context: $(kubectl config current-context 2>/dev/null || echo 'none')"
-  echo "Please ensure you are connected to a Colima Kubernetes cluster."
+  echo "Please connect to a local Colima or kind Kubernetes cluster."
   echo ""
   echo "To create a Colima Kubernetes cluster:"
   echo "  colima start --kubernetes --cpu 4 --memory 8 --disk 50"
   exit 1
 fi
 
-echo "Verified: Current context is a Colima cluster: $(kubectl config current-context)"
+echo "Verified: Current context is a local cluster: $(kubectl config current-context)"
 
-echo "=== Starting Colima Kubernetes cluster ==="
-if ! colima status 2>/dev/null | grep -q "Running"; then
-  echo "Creating new Colima instance with Kubernetes..."
-  colima start --kubernetes --cpu 4 --memory 8 --disk 50 --timeout 15m
-else
-  echo "Colima is already running"
+if ! $SKIP_COLIMA; then
+  echo "=== Starting Colima Kubernetes cluster ==="
+  if ! colima status 2>/dev/null | grep -q "Running"; then
+    echo "Creating new Colima instance with Kubernetes..."
+    colima start --kubernetes --cpu 4 --memory 8 --disk 50 --timeout 15m
+  else
+    echo "Colima is already running"
+  fi
 fi
 
 echo "=== Verifying kubectl context ==="
