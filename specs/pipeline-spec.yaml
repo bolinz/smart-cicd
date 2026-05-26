@@ -1,3 +1,135 @@
-# Pipeline Specification
+# Pipeline Specification Schema
+#
+# Defines the structure of a PipelineSpec — the input format for
+# Smart CI/CD pipeline execution.
+#
+# Submitted to: POST /runs (api-server)
+# Compiled into: RunGraph (spec-compiler.ts)
+# Validated by: compileSpec()
 
-TODO: Define pipeline schema
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: PipelineSpec
+description: A structured pipeline execution request for Smart CI/CD.
+
+type: object
+required:
+  - id
+  - sourceRepo
+  - ref
+  - stages
+  - runtime
+
+properties:
+  id:
+    type: string
+    description: Unique pipeline identifier.
+    pattern: "^[a-zA-Z0-9_-]+$"
+    example: "my-build-pipeline"
+
+  sourceRepo:
+    type: string
+    format: uri
+    description: Repository URL to clone and build.
+    example: "https://github.com/my-org/my-repo"
+
+  ref:
+    type: string
+    description: Git ref (branch, tag, or commit SHA) to check out.
+    example: "main"
+
+  stages:
+    type: array
+    description: Ordered list of stages. Stages with dependsOn may run in parallel.
+    minItems: 1
+    items:
+      type: object
+      required:
+        - id
+        - name
+        - steps
+      properties:
+        id:
+          type: string
+          description: Unique stage identifier within this spec.
+          example: "build"
+        name:
+          type: string
+          description: Human-readable stage name.
+          example: "Build"
+        dependsOn:
+          type: array
+          description: Stage IDs that must complete before this stage starts.
+          items:
+            type: string
+          example: ["lint", "test"]
+        steps:
+          type: array
+          description: Steps to execute in this stage, run sequentially.
+          minItems: 1
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - image
+              - commands
+            properties:
+              id:
+                type: string
+                description: Unique step identifier across all stages.
+                example: "compile"
+              name:
+                type: string
+                description: Human-readable step name.
+                example: "Compile"
+              image:
+                type: string
+                description: Container image for the step executor.
+                example: "golang:1.21"
+              commands:
+                type: array
+                description: Shell commands to execute, wrapped in set -e.
+                items:
+                  type: string
+                example: ["go build ./...", "go test ./..."]
+              resourceClass:
+                type: string
+                description: Resource allocation class.
+                enum: ["small", "medium", "large"]
+              timeout:
+                type: string
+                description: Step timeout duration (e.g. "30m", "1h").
+                example: "30m"
+
+  runtime:
+    type: object
+    description: Build runtime configuration.
+    required:
+      - builder
+      - executorImage
+    properties:
+      builder:
+        type: string
+        description: Build engine.
+        enum: ["docker", "buildkit"]
+      executorImage:
+        type: string
+        description: Default executor image for runner pods.
+        example: "ghcr.io/my-org/smart-cicd/executor:latest"
+
+  retryPolicy:
+    type: object
+    description: Automatic retry policy for step failures.
+    properties:
+      maxAttempts:
+        type: integer
+        description: Maximum number of attempts per step (including first).
+        minimum: 1
+        default: 1
+        example: 3
+      backoffMs:
+        type: integer
+        description: Delay between retry attempts in milliseconds.
+        minimum: 0
+        default: 0
+        example: 1000

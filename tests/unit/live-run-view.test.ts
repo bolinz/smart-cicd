@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { PipelineRun, RunGraph, RunStatus, StepStatus } from '../../services/control-plane/types.js';
 import type { RuntimeEvent } from '../../services/watcher/types.js';
 import { createLiveRunViewServer } from '../../services/ui/index.js';
@@ -67,13 +67,11 @@ function makeMockOrchestrator(): MockOrchestrator {
 
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
-const PORT = 14_999;
-
-function httpGet(path: string): Promise<{ status: number; body: unknown }> {
+function httpGet(port: number, path: string): Promise<{ status: number; body: unknown }> {
   return new Promise((resolve, reject) => {
     const req = http.get({
       hostname: 'localhost',
-      port: PORT,
+      port,
       path,
       headers: { Connection: 'close' },
     }, (res) => {
@@ -93,12 +91,12 @@ function httpGet(path: string): Promise<{ status: number; body: unknown }> {
   });
 }
 
-function collectSSE(path: string, count = 1): Promise<unknown[]> {
+function collectSSE(port: number, path: string, count = 1): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
     const results: unknown[] = [];
     const req = http.get({
       hostname: 'localhost',
-      port: PORT,
+      port,
       path,
       headers: { Connection: 'close' },
     }, (res) => {
@@ -135,14 +133,24 @@ const BASE_GRAPH: RunGraph = {
 
 describe('LiveRunView', { sequential: true }, () => {
   let server: ReturnType<typeof createLiveRunViewServer>;
+  let port: number;
   let orchestrator: MockOrchestrator;
 
-  beforeEach(() => {
+  beforeAll(async () => {
     orchestrator = makeMockOrchestrator();
-    server = createLiveRunViewServer(orchestrator as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: PORT });
+    server = createLiveRunViewServer(orchestrator as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: 0 });
+    await new Promise<void>((resolve) => {
+      server.on('listening', () => {
+        const addr = server.address();
+        if (typeof addr === 'object' && addr) {
+          port = addr.port;
+        }
+        resolve();
+      });
+    });
   });
 
-  afterEach(() => {
+  afterAll(() => {
     server.closeAllConnections?.();
     server.close();
   });
@@ -150,20 +158,20 @@ describe('LiveRunView', { sequential: true }, () => {
   // ── Health ───────────────────────────────────────────────────────────────
 
   it('GET /health returns 200', async () => {
-    const res = await httpGet('/health');
+    const res = await httpGet(port, '/health');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: 'ok' });
   });
 
   it('unknown path returns 404', async () => {
-    const res = await httpGet('/');
+    const res = await httpGet(port, '/');
     expect(res.status).toBe(404);
   });
 
   // ── GET /runs/:runId ────────────────────────────────────────────────────
 
   it('GET /runs/:runId returns 404 for unknown run', async () => {
-    const res = await httpGet('/runs/nonexistent');
+    const res = await httpGet(port, '/runs/nonexistent');
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'Run not found' });
   });
@@ -179,7 +187,7 @@ describe('LiveRunView', { sequential: true }, () => {
     };
     orchestrator._addRun(run, BASE_GRAPH);
 
-    const res = await httpGet('/runs/run-abc');
+    const res = await httpGet(port, '/runs/run-abc');
     expect(res.status).toBe(200);
     const view = res.body as Record<string, unknown>;
     expect(view.run).toMatchObject({ id: 'run-abc', status: 'running' });
@@ -195,7 +203,7 @@ describe('LiveRunView', { sequential: true }, () => {
     const run: PipelineRun = { id: 'run-evt', specId: 'spec-1', status: 'running', riskLevel: 'low', attemptCounts: {} };
     orchestrator._addRun(run, BASE_GRAPH, events);
 
-    const res = await httpGet('/runs/run-evt');
+    const res = await httpGet(port, '/runs/run-evt');
     expect(res.status).toBe(200);
     const view = res.body as Record<string, unknown>;
     expect((view.recentEvents as RuntimeEvent[]).length).toBe(1);
@@ -210,21 +218,24 @@ describe('LiveRunView', { sequential: true }, () => {
     }));
     const run: PipelineRun = { id: 'run-limit', specId: 'spec-1', status: 'running', riskLevel: 'low', attemptCounts: {} };
 
-    server.close();
     const limitedOrch = makeMockOrchestrator();
     limitedOrch._addRun(run, BASE_GRAPH, events);
-    server = createLiveRunViewServer(limitedOrch as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: PORT, maxRecentEvents: 2 });
+    const limitedServer = createLiveRunViewServer(limitedOrch as unknown as import('../../services/control-plane/orchestrator.js').RunOrchestrator, { port: 0, maxRecentEvents: 2 });
+    await new Promise<void>((resolve) => limitedServer.on('listening', () => resolve()));
+    const addr = limitedServer.address();
+    const limitedPort = typeof addr === 'object' && addr ? addr.port : 0;
 
-    const res = await httpGet('/runs/run-limit');
+    const res = await httpGet(limitedPort, '/runs/run-limit');
     expect(res.status).toBe(200);
     const view = res.body as Record<string, unknown>;
     expect((view.recentEvents as RuntimeEvent[]).length).toBe(2);
+    limitedServer.close();
   });
 
   // ── GET /runs ───────────────────────────────────────────────────────────
 
   it('GET /runs returns empty array when no clients subscribed', async () => {
-    const res = await httpGet('/runs');
+    const res = await httpGet(port, '/runs');
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
@@ -232,7 +243,7 @@ describe('LiveRunView', { sequential: true }, () => {
   // ── SSE /runs/:runId/events ────────────────────────────────────────────
 
   it('GET /runs/:runId/events returns 404 for unknown run', async () => {
-    const res = await httpGet('/runs/unknown/events');
+    const res = await httpGet(port, '/runs/unknown/events');
     expect(res.status).toBe(404);
   });
 
@@ -242,7 +253,7 @@ describe('LiveRunView', { sequential: true }, () => {
     };
     orchestrator._addRun(run, BASE_GRAPH);
 
-    const results = await collectSSE('/runs/run-sse/events', 1);
+    const results = await collectSSE(port, '/runs/run-sse/events', 1);
     expect(results.length).toBeGreaterThanOrEqual(1);
     const first = results[0] as Record<string, unknown>;
     expect(first.run).toMatchObject({ id: 'run-sse', status: 'running' });
@@ -254,10 +265,8 @@ describe('LiveRunView', { sequential: true }, () => {
     };
     orchestrator._addRun(run, BASE_GRAPH);
 
-    const p = collectSSE('/runs/run-push/events', 2);
-    // Wait for SSE connection to establish
+    const p = collectSSE(port, '/runs/run-push/events', 2);
     await new Promise((r) => setTimeout(r, 50));
-    // Trigger update
     const updatedRun: PipelineRun = { ...run, riskLevel: 'high' };
     orchestrator._addRun(updatedRun, BASE_GRAPH);
     orchestrator._notify('run-push');
