@@ -72,16 +72,24 @@ export REGISTRY="$REGISTRY_HOST:$REGISTRY_PORT"
 make build-services REGISTRY=$REGISTRY
 
 echo "=== Pushing images to local registry ==="
-for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui; do
-  echo "Pushing $REGISTRY/$svc:latest..."
-  docker push $REGISTRY/$svc:latest || echo "Warning: Failed to push $svc, continuing..."
+GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
+for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui api-server; do
+  echo "Pushing $REGISTRY/$svc:$GIT_SHA..."
+  docker push $REGISTRY/$svc:$GIT_SHA || echo "Warning: Failed to push $svc, continuing..."
 done
 
 echo "=== Waiting for cluster to be ready ==="
 kubectl wait --for=condition=Ready nodes --all --timeout=5m || true
 
+echo "=== Injecting git SHA into Kustomize overlay ==="
+GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
+sed -i '' "s/GIT_SHA/$GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
+
 echo "=== Deploying to Kubernetes ==="
 kubectl apply -k "$PROJECT_ROOT/k8s/overlays/local-e2e"
+
+# Restore placeholder for future runs
+sed -i '' "s/$GIT_SHA/GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
 
 echo "=== Waiting for pods to be ready ==="
 kubectl wait --for=condition=Ready pods -n smart-cicd --all --timeout=5m || {

@@ -9,31 +9,31 @@ resources:
 images:
   - name: pod-watcher
     newName: localhost:5000/pod-watcher
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: job-watcher
     newName: localhost:5000/job-watcher
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: event-watcher
     newName: localhost:5000/event-watcher
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: log-tailer
     newName: localhost:5000/log-tailer
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: rule-engine
     newName: localhost:5000/rule-engine
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: ai-supervisor
     newName: localhost:5000/ai-supervisor
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: action-engine
     newName: localhost:5000/action-engine
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: control-plane
     newName: localhost:5000/control-plane
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: ui
     newName: localhost:5000/ui
-    newTag: 1cb1edf
+    newTag: GIT_SHA
   - name: api-server
     newName: localhost:5000/api-server
-    newTag: 1cb1edf
+    newTag: GIT_SHA
