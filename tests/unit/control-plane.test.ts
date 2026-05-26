@@ -318,6 +318,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -340,6 +344,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -361,6 +369,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -376,6 +388,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: ais,
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -398,6 +414,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -424,6 +444,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -450,6 +474,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -479,6 +507,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -504,6 +536,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: ais,
         actionEngine,
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -537,6 +573,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: ais,
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -554,6 +594,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -579,6 +623,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 
@@ -601,6 +649,10 @@ describe('RunOrchestrator', () => {
         runnerManager: rm as any,
         aisSupervisor: makeStubAisSupervisor(),
         actionEngine: makeStubActionEngine(),
+        ruleEngine: {
+          evaluate: () => [{ rule: 'stuck-step', severity: 'critical', runId: '', message: 'test', evidence: [], shouldEscalate: true, timestamp: '' } as RuleResult],
+          escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+        },
       },
     );
 

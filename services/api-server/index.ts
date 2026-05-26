@@ -20,6 +20,7 @@ import { RunnerManager } from '../control-plane/runner-manager.js';
 import { createAisSupervisor } from '../ai-supervisor/index.js';
 import { createActionEngine } from '../action-engine/index.js';
 import type { ActionDeps } from '../action-engine/executor.js';
+import { evaluateAllRules, escalateResults } from '../rule-engine/index.js';
 import { handleRoutes } from './routes.js';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ async function main(): Promise<void> {
   // Create orchestrator
   const orchestrator = new RunOrchestrator(
     { namespace: NAMESPACE },
-    { runnerManager, aisSupervisor, actionEngine },
+    { runnerManager, aisSupervisor, actionEngine, ruleEngine: { evaluate: evaluateAllRules, escalate: escalateResults } },
   );
 
   console.log(`[api-server] Orchestrator initialized`);

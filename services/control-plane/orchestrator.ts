@@ -16,7 +16,7 @@ import type { DiagnosisRecord } from '../ai-supervisor/types.js';
 import type { CandidateAction, InterventionRecord } from '../action-engine/types.js';
 import { compileSpec } from './spec-compiler.js';
 import { RunnerManager } from './runner-manager.js';
-import { evaluateAllRules, escalateResults } from '../rule-engine/index.js';
+
 
 const DEFAULT_NAMESPACE = 'default';
 
@@ -47,6 +47,15 @@ class RunStore {
   saveStepRun(stepRun: StepRun): void {
     this.stepRuns.set(stepRun.id, stepRun);
   }
+}
+
+export interface RuleEngineStub {
+  evaluate(ctx: {
+    events: RuntimeEvent[];
+    stepRunId?: string;
+    runId: string;
+  }): RuleResult[];
+  escalate(ruleResults: RuleResult[]): RuleResult[];
 }
 
 export interface AisSupervisorStub {
@@ -111,6 +120,7 @@ export class RunOrchestrator implements EventSink {
       runnerManager: RunnerManager;
       aisSupervisor: AisSupervisorStub;
       actionEngine: ActionEngineStub;
+      ruleEngine: RuleEngineStub;
     },
   ) {
     this.store = new RunStore();
@@ -145,7 +155,7 @@ export class RunOrchestrator implements EventSink {
       stepRunId: run.currentStepId,
     };
 
-    const results = evaluateAllRules(ctx);
+    const results = this.deps.ruleEngine.evaluate(ctx);
     if (results.length === 0) return;
 
     // Update risk level
@@ -157,7 +167,7 @@ export class RunOrchestrator implements EventSink {
     }
 
     // Escalate to AI supervisor if any result has shouldEscalate
-    const escalated = escalateResults(results);
+    const escalated = this.deps.ruleEngine.escalate(results);
     if (escalated.length > 0) {
       this.escalateToAisSupervisor(runId, run.currentStepId, events, escalated);
     }

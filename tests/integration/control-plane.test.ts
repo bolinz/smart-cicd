@@ -16,6 +16,7 @@ import { RunOrchestrator } from '../../services/control-plane/orchestrator.js';
 import { createAisSupervisor } from '../../services/ai-supervisor/index.js';
 import type { AisSupervisorStub } from '../../services/control-plane/orchestrator.js';
 import type { ActionEngineStub } from '../../services/control-plane/orchestrator.js';
+import type { RuleResult } from '../../services/rule-engine/types.js';
 import type { RuntimeEvent } from '../../services/watcher/types.js';
 
 // ─── Mock Kubernetes API ───────────────────────────────────────────────────────
@@ -145,6 +146,10 @@ function makeOrchestrator(
       runnerManager: runnerManager as unknown as import('../../services/control-plane/runner-manager.js').RunnerManager,
       aisSupervisor,
       actionEngine,
+      ruleEngine: {
+        evaluate: () => [{ rule: 'infra-failure', severity: 'critical', runId: '', message: 'OOMKilled', evidence: [], shouldEscalate: true, timestamp: '' }],
+        escalate: (results: RuleResult[]) => results.filter(r => r.shouldEscalate),
+      },
     },
   );
 }
