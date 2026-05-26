@@ -6,7 +6,7 @@
 
 ## Overview
 
-Smart CI/CD uses a lightweight GitHub Flow with structured branch naming. The model is designed for a single-team, single-repo setup with automated CI/CD.
+Smart CI/CD uses a lightweight GitHub Flow with structured branch naming. The model is designed for a single-contributor repo with automated CI/CD.
 
 ## Branch Naming
 
@@ -22,10 +22,11 @@ Smart CI/CD uses a lightweight GitHub Flow with structured branch naming. The mo
 ## Rules
 
 ### main
-- Protected — requires PR + 1 review
+- Protected — every change must go through a PR (admins included)
 - Requires CI checks (typecheck + test) to pass
-- Direct push is forbidden
-- Linear history recommended (merge with squash or rebase)
+- Direct push is forbidden — `enforce_admins` enabled
+- No review required (single contributor)
+- PR workflow: create PR → CI runs → merge via `gh pr merge`
 
 ### Feature / Fix / Chore / Docs
 - Branch from `main`
@@ -43,25 +44,44 @@ Smart CI/CD uses a lightweight GitHub Flow with structured branch naming. The mo
 ```mermaid
 graph LR
     A[main] -->|branch| B[feat/xxx]
-    B -->|PR + review + CI| A
+    B -->|PR + CI| A
     A -->|changeset| C[release/*]
     C -->|PR + CI| A
     A -->|tag| D[GitHub Release]
+```
+
+## CI/CD Pipeline
+
+Every PR triggers:
+1. **CI** — TypeScript typecheck + vitest unit/integration tests
+2. **Docker** — Build all 10 service images (no push on PR)
+
+Push to `main` additionally:
+- Pushes Docker images to ghcr.io
+- Triggers Release workflow if `.changeset/` files changed
+
+## Single-Contributor Workflow
+
+```bash
+# 1. Branch from main
+git checkout -b feat/my-feature
+
+# 2. Code and commit
+git add . && git commit -m "feat: ..."
+git push -u origin feat/my-feature
+
+# 3. Create PR (triggers CI)
+gh pr create --title "feat: ..." --body ""
+
+# 4. CI passes → merge
+gh pr merge <number> --merge
+
+# 5. Clean up local branch
+git checkout main && git pull
+git branch -d feat/my-feature
 ```
 
 ## Cleanup
 
 - Delete local branches after they are merged
 - Prune remote tracking refs periodically: `git remote prune origin`
-- Keep `main` clean — rebase or squash merge to avoid unnecessary merge commits
-
-## CI/CD Pipeline
-
-Every PR triggers:
-1. **MiniMax PR Review** — AI code review
-2. **CI** — TypeScript typecheck + vitest unit/integration tests
-3. **Docker** — Build all 10 service images (no push on PR)
-
-Push to `main` additionally:
-- Pushes Docker images to ghcr.io
-- Triggers Release workflow if `.changeset/` files changed

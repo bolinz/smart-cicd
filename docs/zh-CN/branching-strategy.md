@@ -1,67 +1,87 @@
-# Branching Strategy
+# 分支策略
 
 > Source pair:
 > - English: ../en/branching-strategy.md
 > - 中文: ./branching-strategy.md
 
-## Overview
+## 概述
 
-Smart CI/CD uses a lightweight GitHub Flow with structured branch naming. The model is designed for a single-team, single-repo setup with automated CI/CD.
+Smart CI/CD 采用轻量级 GitHub Flow 配合结构化的分支命名规范。该模型针对单人维护的仓库设计，配合自动化 CI/CD。
 
-## Branch Naming
+## 分支命名
 
-| Pattern | Purpose | Base | Lifespan |
-|---------|---------|------|----------|
-| `main` | Production-ready code | — | Permanent |
-| `feat/<name>` | New features | `main` | Short-lived |
-| `fix/<name>` | Bug fixes | `main` | Short-lived |
-| `chore/<name>` | Maintenance (deps, config, refactor) | `main` | Short-lived |
-| `docs/<name>` | Documentation changes | `main` | Short-lived |
-| `release/*` | Release preparation (auto-managed by changesets) | `main` | Temporary |
+| 模式 | 用途 | 基线 | 生命周期 |
+|------|------|------|----------|
+| `main` | 生产就绪代码 | — | 永久 |
+| `feat/<name>` | 新功能 | `main` | 短期 |
+| `fix/<name>` | Bug 修复 | `main` | 短期 |
+| `chore/<name>` | 维护（依赖、配置、重构） | `main` | 短期 |
+| `docs/<name>` | 文档变更 | `main` | 短期 |
+| `release/*` | 版本发布（由 changesets 自动管理） | `main` | 临时 |
 
-## Rules
+## 规则
 
 ### main
-- Protected — requires PR + 1 review
-- Requires CI checks (typecheck + test) to pass
-- Direct push is forbidden
-- Linear history recommended (merge with squash or rebase)
+- 受保护——所有变更必须通过 PR（管理员也不例外）
+- CI 检查（typecheck + test）必须通过
+- 禁止直接推送——`enforce_admins` 已启用
+- 不需要 review（单人仓库）
+- PR 流程：创建 PR → CI 运行 → `gh pr merge` 合并
 
 ### Feature / Fix / Chore / Docs
-- Branch from `main`
-- Must be up to date with `main` before merging
-- Naming: `<type>/<kebab-case-description>` (e.g., `feat/ai-supervisor-diagnosis`, `fix/hardcoded-namespace`)
-- Merge back to `main` via PR
+- 从 `main` 创建分支
+- 合入前必须与 `main` 保持同步
+- 命名规范：`<类型>/<kebab-case-描述>`（例如 `feat/ai-supervisor-diagnosis`、`fix/hardcoded-namespace`）
+- 通过 PR 合并回 `main`
 
 ### Release
-- Managed by Changesets — created and updated automatically when `.changeset/` files are detected
-- PR title: `chore: version packages`
-- Merged to trigger GitHub Release
+- 由 Changesets 管理——检测到 `.changeset/` 文件时自动创建/更新
+- PR 标题：`chore: version packages`
+- 合并后触发 GitHub Release
 
-## Workflow
+## 工作流程
 
 ```mermaid
 graph LR
-    A[main] -->|branch| B[feat/xxx]
-    B -->|PR + review + CI| A
+    A[main] -->|创建分支| B[feat/xxx]
+    B -->|PR + CI| A
     A -->|changeset| C[release/*]
     C -->|PR + CI| A
     A -->|tag| D[GitHub Release]
 ```
 
-## Cleanup
+## CI/CD 流水线
 
-- Delete local branches after they are merged
-- Prune remote tracking refs periodically: `git remote prune origin`
-- Keep `main` clean — rebase or squash merge to avoid unnecessary merge commits
+每个 PR 触发：
+1. **CI** — TypeScript 类型检查 + vitest 单元/集成测试
+2. **Docker** — 构建 10 个服务镜像（PR 不推送）
 
-## CI/CD Pipeline
+推送到 `main` 额外触发：
+- 推送 Docker 镜像到 ghcr.io
+- 如果 `.changeset/` 文件变更，触发 Release 工作流
 
-Every PR triggers:
-1. **MiniMax PR Review** — AI code review
-2. **CI** — TypeScript typecheck + vitest unit/integration tests
-3. **Docker** — Build all 10 service images (no push on PR)
+## 单人工作流
 
-Push to `main` additionally:
-- Pushes Docker images to ghcr.io
-- Triggers Release workflow if `.changeset/` files changed
+```bash
+# 1. 从 main 创建功能分支
+git checkout -b feat/my-feature
+
+# 2. 编码并提交
+git add . && git commit -m "feat: ..."
+git push -u origin feat/my-feature
+
+# 3. 创建 PR（触发 CI）
+gh pr create --title "feat: ..." --body ""
+
+# 4. CI 通过后合并
+gh pr merge <number> --merge
+
+# 5. 清理本地分支
+git checkout main && git pull
+git branch -d feat/my-feature
+```
+
+## 清理
+
+- 合并后删除本地分支
+- 定期清理远程跟踪引用：`git remote prune origin`
