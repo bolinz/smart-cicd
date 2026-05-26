@@ -97,6 +97,24 @@ kubectl wait --for=condition=Ready pods -n smart-cicd --all --timeout=5m || {
   kubectl get pods -n smart-cicd
 }
 
+echo "=== Setting up port-forward to api-server ==="
+kubectl port-forward -n smart-cicd svc/api-server 8080:8080 &
+PF_PID=$!
+echo "Port-forward PID: $PF_PID"
+
+# Wait for port-forward to be established
+sleep 3
+if ! curl -s http://localhost:8080/health > /dev/null 2>&1; then
+  echo "Warning: api-server health check failed, continuing anyway..."
+fi
+
+# Cleanup port-forward on script exit or interrupt
+cleanup() {
+  echo "Cleaning up port-forward..."
+  kill $PF_PID 2>/dev/null || true
+}
+trap cleanup EXIT
+
 echo "=== Deployment complete ==="
 kubectl get pods -n smart-cicd
 echo ""

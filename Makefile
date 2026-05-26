@@ -66,6 +66,16 @@ push-services: build-services
 	docker push $(REGISTRY)/api-server:$(GIT_SHA)
 	@echo "All images pushed."
 
+# ── E2E ─────────────────────────────────────────────────────────────────────
+
+.PHONY: local-e2e
+
+# One-command local e2e: deploy + test + cleanup
+local-e2e:
+	scripts/local-e2e-startup.sh
+	npm run test:e2e
+	scripts/local-e2e-cleanup.sh
+
 # ── Clean ─────────────────────────────────────────────────────────────────────
 
 clean:
