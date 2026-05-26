@@ -1,7 +1,7 @@
 import type { BatchV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
 import type { JobSignal, JobPhase } from './types.js';
 import { normalizeJobSignal } from './normalizer.js';
-import type { EventSink } from './event-emitter.js';
+import type { EventBus } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 
@@ -15,7 +15,7 @@ export class JobWatcher {
   private readonly config: JobWatcherConfig;
   private readonly k8sApi: BatchV1Api;
   private readonly watch: Watch;
-  private readonly sink: EventSink;
+  private readonly sink: EventBus;
   private readonly labelKey: string;
 
   constructor(
@@ -23,7 +23,7 @@ export class JobWatcher {
     deps: {
       k8sApi: BatchV1Api;
       watch: Watch;
-      sink: EventSink;
+      sink: EventBus;
     },
   ) {
     this.config = config;
@@ -45,7 +45,7 @@ export class JobWatcher {
 
   /**
    * Starts watching Jobs with the configured label selector and emits
-   * normalized RuntimeEvents to the configured EventSink.
+   * normalized RuntimeEvents to the configured EventBus.
    *
    * Returns a function that stops the watch when called.
    */

@@ -1,7 +1,7 @@
 import type { CoreV1Api, V1Pod } from '@kubernetes/client-node';
 import type { LogSignal } from './types.js';
 import { normalizeLogSignal } from './normalizer.js';
-import type { EventSink } from './event-emitter.js';
+import type { EventBus } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 
@@ -14,19 +14,19 @@ export interface LogTailerConfig {
 
 /**
  * LogTailer fetches container logs from a Kubernetes Pod and emits
- * normalized RuntimeEvent (kind: LogLine) via the EventSink.
+ * normalized RuntimeEvent (kind: LogLine) via the EventBus.
  *
- * Uses a single fetch with timestamps enabled for MVP simplicity.
- * For long-lived pod streaming, the follow=true parameter is used.
+ * Uses a single-shot fetch with timestamps enabled for MVP simplicity.
+ * For long-lived pod streaming, use the K8s log follow API or polling.
  */
 export class LogTailer {
   private readonly config: LogTailerConfig;
   private readonly k8sApi: CoreV1Api;
-  private readonly sink: EventSink;
+  private readonly sink: EventBus;
   private readonly labelKey: string;
   private aborted = false;
 
-  constructor(config: LogTailerConfig, deps: { k8sApi: CoreV1Api; sink: EventSink }) {
+  constructor(config: LogTailerConfig, deps: { k8sApi: CoreV1Api; sink: EventBus }) {
     this.config = config;
     this.k8sApi = deps.k8sApi;
     this.sink = deps.sink;
@@ -65,7 +65,7 @@ export class LogTailer {
         this.config.podName,
         this.config.namespace,
         this.config.containerName,
-        true,       // follow
+        false,      // follow — single-shot fetch
         false,      // insecureSkipTLSVerifyBackend
         undefined,  // limitBytes
         undefined,  // pretty

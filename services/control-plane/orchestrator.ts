@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import type { RuntimeEvent } from '../watcher/types.js';
-import type { EventSink } from '../watcher/event-emitter.js';
+import type { EventBus } from '../watcher/event-emitter.js';
 import type {
   PipelineSpec,
   PipelineRun,
@@ -98,12 +98,12 @@ function stepStatusFromRunStatus(status: RunStatus): StepStatus {
  * - Create PipelineRun from PipelineSpec
  * - Compile spec to RunGraph via SpecCompiler
  * - Schedule steps as K8s Jobs via RunnerManager
- * - Wire watcher EventSink → rule-engine → ai-supervisor → action-engine
+ * - Wire watcher EventBus → rule-engine → ai-supervisor → action-engine
  * - Handle step completion / failure and advance PipelineRun
  * - Transition PipelineRun status: pending → running → succeeded/failed
  * - Persist run and step run state
  */
-export class RunOrchestrator implements EventSink {
+export class RunOrchestrator implements EventBus {
   private readonly store: RunStore;
   private readonly runs = new Map<string, { spec: PipelineSpec; graph: RunGraph }>();
 
@@ -126,7 +126,7 @@ export class RunOrchestrator implements EventSink {
     this.store = new RunStore();
   }
 
-  // ─── EventSink implementation ────────────────────────────────────────────────
+  // ─── EventBus implementation ────────────────────────────────────────────────
 
   /**
    * Receive normalized runtime events from watchers.

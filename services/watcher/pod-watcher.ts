@@ -1,7 +1,7 @@
 import type { CoreV1Api, KubernetesObject, Watch } from '@kubernetes/client-node';
 import type { PodWatcherConfig, PodSignal, PodPhase } from './types.js';
 import { normalizePodSignal } from './normalizer.js';
-import type { EventSink } from './event-emitter.js';
+import type { EventBus } from './event-emitter.js';
 
 const DEFAULT_LABEL_KEY = 'run_id';
 
@@ -9,7 +9,7 @@ export class PodWatcher {
   private readonly config: PodWatcherConfig;
   private readonly k8sApi: CoreV1Api;
   private readonly watch: Watch;
-  private readonly sink: EventSink;
+  private readonly sink: EventBus;
   private readonly labelKey: string;
 
   /** Track the previous restart count per pod to detect increases. */
@@ -20,7 +20,7 @@ export class PodWatcher {
     deps: {
       k8sApi: CoreV1Api;
       watch: Watch;
-      sink: EventSink;
+      sink: EventBus;
     },
   ) {
     this.config = config;
@@ -42,7 +42,7 @@ export class PodWatcher {
 
   /**
    * Starts watching Pods with the configured label selector and emits
-   * normalized RuntimeEvents to the configured EventSink.
+   * normalized RuntimeEvents to the configured EventBus.
    *
    * Returns a function that stops the watch when called.
    */
