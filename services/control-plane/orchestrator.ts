@@ -103,6 +103,7 @@ export class RunOrchestrator implements EventSink {
 
   // Callbacks for live-view notifications
   private readonly listeners = new Set<(run: PipelineRun) => void>();
+  private readonly runListeners = new Map<string, Set<(run: PipelineRun) => void>>();
 
   constructor(
     private readonly config: { namespace?: string },
@@ -152,7 +153,7 @@ export class RunOrchestrator implements EventSink {
     if (newRisk !== run.riskLevel) {
       run.riskLevel = newRisk;
       this.store.saveRun(run);
-      this.notifyListeners();
+      this.notifyListeners(runId);
     }
 
     // Escalate to AI supervisor if any result has shouldEscalate
@@ -232,7 +233,7 @@ export class RunOrchestrator implements EventSink {
     run.status = 'running';
     run.startedAt = new Date().toISOString();
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
 
     return run;
   }
@@ -292,7 +293,7 @@ export class RunOrchestrator implements EventSink {
 
     run.currentStepId = stepId;
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
 
     const jobSpec = this.deps.runnerManager.createStepRun({
       run,
@@ -361,7 +362,7 @@ export class RunOrchestrator implements EventSink {
     run.finishedAt = new Date().toISOString();
     run.riskLevel = 'critical';
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
   }
 
   /**
@@ -391,7 +392,7 @@ export class RunOrchestrator implements EventSink {
       run.status = allSucceeded ? 'succeeded' : 'failed';
       run.finishedAt = new Date().toISOString();
       this.store.saveRun(run);
-      this.notifyListeners();
+      this.notifyListeners(runId);
     }
   }
 
@@ -404,23 +405,55 @@ export class RunOrchestrator implements EventSink {
     run.status = 'cancelled';
     run.finishedAt = new Date().toISOString();
     this.store.saveRun(run);
-    this.notifyListeners();
+    this.notifyListeners(runId);
   }
 
   // ─── Live-view ─────────────────────────────────────────────────────────────
 
   /**
    * Subscribe to run state changes for live-view updates.
+   * If runId is provided, listener only receives updates for that specific run.
    */
-  subscribe(listener: (run: PipelineRun) => void): () => void {
+  subscribe(listener: (run: PipelineRun) => void, runId?: string): () => void {
+    if (runId) {
+      let set = this.runListeners.get(runId);
+      if (!set) {
+        set = new Set();
+        this.runListeners.set(runId, set);
+      }
+      set.add(listener);
+      return () => {
+        set?.delete(listener);
+        if (set?.size === 0) {
+          this.runListeners.delete(runId);
+        }
+      };
+    }
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  private notifyListeners(): void {
-    for (const run of this.store.runs.values()) {
+  private notifyListeners(runId?: string): void {
+    if (runId) {
+      const run = this.store.getRun(runId);
+      if (!run) return;
+      // Notify global listeners about the specific changed run
       for (const listener of this.listeners) {
         listener(run);
+      }
+      // Notify run-scoped listeners
+      const set = this.runListeners.get(runId);
+      if (set) {
+        for (const listener of set) {
+          listener(run);
+        }
+      }
+    } else {
+      // No runId — notify global listeners about all runs (fallback)
+      for (const run of this.store.runs.values()) {
+        for (const listener of this.listeners) {
+          listener(run);
+        }
       }
     }
   }
