@@ -6,6 +6,7 @@ import type { PipelineRun } from '../control-plane/types.js';
 
 export interface ActionDeps {
   k8sApi: CoreV1Api;
+  namespace: string;
   // Callback to the orchestrator to reschedule a step
   onRerunStep?: (runId: string, stepId: string) => void;
   // Callback to the orchestrator to cancel a run
@@ -84,7 +85,7 @@ export class InterventionExecutor {
 
     try {
       // Delete the runner pod to trigger a restart
-      await this.deps.k8sApi.deleteNamespacedPod(podName, 'default');
+      await this.deps.k8sApi.deleteNamespacedPod(podName, this.deps.namespace);
       return {
         success: true,
         message: `Pod ${podName} deleted for restart`,

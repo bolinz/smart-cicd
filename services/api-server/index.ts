@@ -55,6 +55,7 @@ async function main(): Promise<void> {
   // Create action engine with K8s executor
   const actionEngineDeps: ActionDeps = {
     k8sApi,
+    namespace: NAMESPACE,
     onRerunStep: (runId: string, stepId: string) => {
       orchestrator.scheduleStep(runId, stepId).catch((err: unknown) => {
         console.error('[api-server] scheduleStep failed:', err);
