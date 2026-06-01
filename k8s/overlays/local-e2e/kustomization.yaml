@@ -2,10 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: smart-cicd
 resources:
-  - ../../base/namespace.yaml
-  - ../../base/configmaps.yaml
-  - ../../base/services.yaml
-  - ../../base/deployments.yaml
+  - ../../base
 images:
   - name: pod-watcher
     newName: localhost:5000/pod-watcher
