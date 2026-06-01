@@ -255,7 +255,7 @@ describe('RunnerManager', () => {
     const containers = podSpec.containers as Array<Record<string, unknown>>;
     const cmd = containers[0].command as string[];
 
-    expect(cmd).toContain('/bin/bash');
+    expect(cmd).toContain('/bin/sh');
     expect(cmd).toContain('-c');
     const script = cmd[cmd.length - 1];
     expect(script).toContain('go build ./...');
@@ -319,6 +319,7 @@ describe('RunOrchestrator', () => {
         jobManifest: { apiVersion: 'batch/v1', kind: 'Job' },
       }),
       submitJob: vi.fn().mockResolvedValue(undefined),
+      pollJobUntilComplete: vi.fn(),
     };
   }
 

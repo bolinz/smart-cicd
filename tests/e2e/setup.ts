@@ -66,6 +66,7 @@ beforeAll(async () => {
 
   // Verify core services are deployed
   const expectedApps = [
+    'api-server',
     'control-plane',
     'ui',
     'pod-watcher',

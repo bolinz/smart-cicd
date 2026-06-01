@@ -1,50 +1,59 @@
 #!/bin/bash
 #
-# local-e2e-startup.sh - Start Colima Kubernetes cluster for e2e testing
+# local-e2e-startup.sh - Start local Kubernetes cluster for e2e testing
 #
 # This script:
-# 1. Verifies the current kubectl context is a Colima-created cluster
-# 2. Starts Colima with Kubernetes if not already running
-# 3. Starts a local Docker registry accessible from Colima VM
+# 1. Verifies the current kubectl context is a local cluster (Colima or kind)
+# 2. Starts Colima with Kubernetes if not already running (unless --skip-colima)
+# 3. Starts a local Docker registry accessible from the cluster VM
 # 4. Builds and pushes service images to the local registry
 # 5. Deploys services to the cluster
 #
-
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REGISTRY_PORT=5000
 
-echo "=== Verifying Colima Kubernetes cluster ==="
+SKIP_COLIMA=false
+if [[ "$1" == "--skip-colima" ]]; then
+  SKIP_COLIMA=true
+  shift
+fi
 
-# Function to check if current context is Colima
-is_colima_cluster() {
-  local context
+echo "=== Verifying local Kubernetes cluster ==="
+
+# Function to check if current context is a local cluster (Colima or kind)
+is_local_cluster() {
+  local context cluster
   context=$(kubectl config current-context 2>/dev/null || echo "")
-  # Colima typically uses "colima" or "colima-<profile>" as context name
-  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]]
+  cluster=$(kubectl config get-clusters 2>/dev/null | grep -v NAME | head -1 || echo "")
+  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]] || \
+  [[ "$context" == "kind" ]] || [[ "$context" == kind-* ]] || \
+  [[ "$cluster" == "kind-"* ]] || [[ "$cluster" == "colima"* ]]
 }
 
-# Check if we're on a Colima cluster
-if ! is_colima_cluster; then
-  echo "ERROR: Current kubectl context is not a Colima cluster."
+# Check if we're on a local cluster
+if ! is_local_cluster; then
+  echo "ERROR: Current kubectl context is not a local cluster."
   echo "Current context: $(kubectl config current-context 2>/dev/null || echo 'none')"
-  echo "Please ensure you are connected to a Colima Kubernetes cluster."
+  echo "Please connect to a local Colima or kind Kubernetes cluster."
   echo ""
   echo "To create a Colima Kubernetes cluster:"
   echo "  colima start --kubernetes --cpu 4 --memory 8 --disk 50"
   exit 1
 fi
 
-echo "Verified: Current context is a Colima cluster: $(kubectl config current-context)"
+echo "Verified: Current context is a local cluster: $(kubectl config current-context)"
 
-echo "=== Starting Colima Kubernetes cluster ==="
-if ! colima status 2>/dev/null | grep -q "Running"; then
-  echo "Creating new Colima instance with Kubernetes..."
-  colima start --kubernetes --cpu 4 --memory 8 --disk 50 --timeout 15m
-else
-  echo "Colima is already running"
+if ! $SKIP_COLIMA; then
+  echo "=== Starting Colima Kubernetes cluster ==="
+  if ! colima status 2>/dev/null | grep -q "Running"; then
+    echo "Creating new Colima instance with Kubernetes..."
+    colima start --kubernetes --cpu 4 --memory 8 --disk 50 --timeout 15m
+  else
+    echo "Colima is already running"
+  fi
 fi
 
 echo "=== Verifying kubectl context ==="
@@ -72,22 +81,53 @@ export REGISTRY="$REGISTRY_HOST:$REGISTRY_PORT"
 make build-services REGISTRY=$REGISTRY
 
 echo "=== Pushing images to local registry ==="
-for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui; do
-  echo "Pushing $REGISTRY/$svc:latest..."
-  docker push $REGISTRY/$svc:latest || echo "Warning: Failed to push $svc, continuing..."
+GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
+for svc in pod-watcher job-watcher event-watcher log-tailer rule-engine control-plane action-engine ai-supervisor ui api-server; do
+  echo "Pushing $REGISTRY/$svc:$GIT_SHA..."
+  docker push $REGISTRY/$svc:$GIT_SHA || echo "Warning: Failed to push $svc, continuing..."
 done
 
 echo "=== Waiting for cluster to be ready ==="
 kubectl wait --for=condition=Ready nodes --all --timeout=5m || true
 
+echo "=== Injecting git SHA into Kustomize overlay ==="
+GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
+# Cross-platform sed: macOS uses -i '', Linux uses -i without arg
+SED_INPLACE=(-i)
+if [[ "$(uname)" == "Darwin" ]]; then
+  SED_INPLACE=(-i '')
+fi
+sed "${SED_INPLACE[@]}" "s/GIT_SHA/$GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
+
 echo "=== Deploying to Kubernetes ==="
 kubectl apply -k "$PROJECT_ROOT/k8s/overlays/local-e2e"
+
+# Restore placeholder for future runs
+sed "${SED_INPLACE[@]}" "s/$GIT_SHA/GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
 
 echo "=== Waiting for pods to be ready ==="
 kubectl wait --for=condition=Ready pods -n smart-cicd --all --timeout=5m || {
   echo "Warning: Some pods may not be ready yet"
   kubectl get pods -n smart-cicd
 }
+
+echo "=== Setting up port-forward to api-server ==="
+kubectl port-forward -n smart-cicd svc/api-server 8080:8080 &
+PF_PID=$!
+echo "Port-forward PID: $PF_PID"
+
+# Wait for port-forward to be established
+sleep 3
+if ! curl -s http://localhost:8080/health > /dev/null 2>&1; then
+  echo "Warning: api-server health check failed, continuing anyway..."
+fi
+
+# Cleanup port-forward on script exit or interrupt
+cleanup() {
+  echo "Cleaning up port-forward..."
+  kill $PF_PID 2>/dev/null || true
+}
+trap cleanup EXIT
 
 echo "=== Deployment complete ==="
 kubectl get pods -n smart-cicd

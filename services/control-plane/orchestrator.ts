@@ -140,6 +140,21 @@ export class RunOrchestrator implements EventBus {
     this.eventBuffers.set(event.runId, buffer);
 
     this.evaluateRules(event.runId);
+
+    // Detect step completion/failure from job/pod events
+    if (event.kind === 'JobPhaseChanged' || event.kind === 'PodPhaseChanged') {
+      const stepRuns = this.store.getStepRunsForRun(event.runId);
+      const matchingStepRun = stepRuns.find(
+        (sr) => sr.stepId === event.stepId && sr.status === 'running',
+      );
+      if (matchingStepRun) {
+        if (event.type === 'Succeeded') {
+          this.onStepCompleted(matchingStepRun.id);
+        } else if (event.type === 'Failed') {
+          this.onStepFailed(matchingStepRun.id, event.message);
+        }
+      }
+    }
   }
 
   // ─── Rule evaluation ─────────────────────────────────────────────────────────
@@ -314,6 +329,13 @@ export class RunOrchestrator implements EventBus {
 
     try {
       await this.deps.runnerManager.submitJob(jobSpec.jobManifest);
+      // Poll for job completion (safety net when watchers aren't deployed)
+      this.deps.runnerManager.pollJobUntilComplete(
+        jobSpec.jobName,
+        stepRunId,
+        (id) => this.onStepCompleted(id),
+        (id, reason) => this.onStepFailed(id, reason),
+      );
     } catch (err) {
       console.error(`[Orchestrator] failed to submit job for step ${stepId}:`, err);
       this.failStep(runId, stepRunId, String(err));
