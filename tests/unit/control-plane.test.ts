@@ -319,6 +319,7 @@ describe('RunOrchestrator', () => {
         jobManifest: { apiVersion: 'batch/v1', kind: 'Job' },
       }),
       submitJob: vi.fn().mockResolvedValue(undefined),
+      pollJobUntilComplete: vi.fn(),
     };
   }
 

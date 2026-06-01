@@ -71,6 +71,15 @@ class MockRunnerManager {
   getStepRunId(index: number): string {
     return this.submittedJobs[index]?.stepRunId ?? '';
   }
+
+  async pollJobUntilComplete(
+    _jobName: string,
+    _stepRunId: string,
+    _onComplete: (stepRunId: string) => void,
+    _onFailed: (stepRunId: string, reason: string) => void,
+  ): Promise<void> {
+    // no-op: tests drive the orchestrator directly via onStepCompleted
+  }
 }
 
 // ─── Mock AI Supervisor ───────────────────────────────────────────────────────
