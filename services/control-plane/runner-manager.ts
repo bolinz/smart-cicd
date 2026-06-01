@@ -148,7 +148,7 @@ export class RunnerManager {
                 name: 'main',
                 image: step.image,
                 imagePullPolicy: this.imagePullPolicy,
-                command: ['/bin/bash', '-c', script],
+                command: ['/bin/sh', '-c', script],
                 resources: step.resourceClass
                   ? this.resourceClassToResources(step.resourceClass)
                   : undefined,
