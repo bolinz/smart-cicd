@@ -184,4 +184,40 @@ export class RunnerManager {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.deps.batchApi.createNamespacedJob(this.namespace, manifest as any);
   }
+
+  /**
+   * Poll a K8s Job until completion, then call the callback.
+   * Used when watchers are not deployed to detect step completion.
+   */
+  async pollJobUntilComplete(
+    jobName: string,
+    stepRunId: string,
+    onComplete: (stepRunId: string) => void,
+    onFailed: (stepRunId: string, reason: string) => void,
+    timeoutMs: number = 300_000,
+  ): Promise<void> {
+    const start = Date.now();
+    const poll = async () => {
+      while (Date.now() - start < timeoutMs) {
+        try {
+          const res = await this.deps.batchApi.readNamespacedJob(jobName, this.namespace);
+          const job = res.body;
+          if (job?.status?.succeeded === 1) {
+            onComplete(stepRunId);
+            return;
+          }
+          if (job?.status?.failed === 1) {
+            const reason = job.status.conditions?.[0]?.reason ?? 'Job failed';
+            onFailed(stepRunId, reason);
+            return;
+          }
+        } catch {
+          // Job might not exist yet
+        }
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+      console.error(`[RunnerManager] pollJobUntilComplete timed out for job ${jobName}`);
+    };
+    poll();
+  }
 }

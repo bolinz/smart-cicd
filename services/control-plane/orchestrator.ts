@@ -329,6 +329,13 @@ export class RunOrchestrator implements EventBus {
 
     try {
       await this.deps.runnerManager.submitJob(jobSpec.jobManifest);
+      // Poll for job completion (safety net when watchers aren't deployed)
+      this.deps.runnerManager.pollJobUntilComplete(
+        jobSpec.jobName,
+        stepRunId,
+        (id) => this.onStepCompleted(id),
+        (id, reason) => this.onStepFailed(id, reason),
+      );
     } catch (err) {
       console.error(`[Orchestrator] failed to submit job for step ${stepId}:`, err);
       this.failStep(runId, stepRunId, String(err));
