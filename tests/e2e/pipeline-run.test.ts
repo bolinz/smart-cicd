@@ -16,10 +16,6 @@ import { waitForJob, waitForJobCompletion, cleanupRunResources } from './helpers
 describe('Full Pipeline Run', () => {
   const namespace = 'smart-cicd';
 
-  afterEach(async () => {
-    // Cleanup is handled by teardown.ts
-  });
-
   function makeJobName(runId: string, stepId: string): string {
     return `${runId}-${stepId}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 253);
   }
