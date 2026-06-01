@@ -76,6 +76,31 @@ jobs:
             KUBERNETES_NAMESPACE: "smart-cicd"
             NAMESPACE: "smart-cicd"
           ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: smart-cicd-runner
+          rules:
+            - apiGroups: ["batch"]
+              resources: ["jobs"]
+              verbs: ["create", "get", "list", "watch", "delete"]
+            - apiGroups: [""]
+              resources: ["pods", "pods/log", "events"]
+              verbs: ["get", "list", "watch", "create", "delete"]
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: smart-cicd-runner
+          subjects:
+            - kind: ServiceAccount
+              name: default
+              namespace: smart-cicd
+          roleRef:
+            kind: ClusterRole
+            name: smart-cicd-runner
+            apiGroup: rbac.authorization.k8s.io
+          ---
           apiVersion: apps/v1
           kind: Deployment
           metadata:
