@@ -25,10 +25,12 @@ echo "=== Verifying local Kubernetes cluster ==="
 
 # Function to check if current context is a local cluster (Colima or kind)
 is_local_cluster() {
-  local context
+  local context cluster
   context=$(kubectl config current-context 2>/dev/null || echo "")
+  cluster=$(kubectl config get-clusters 2>/dev/null | grep -v NAME | head -1 || echo "")
   [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]] || \
-  [[ "$context" == "kind" ]] || [[ "$context" == kind-* ]]
+  [[ "$context" == "kind" ]] || [[ "$context" == kind-* ]] || \
+  [[ "$cluster" == "kind-"* ]] || [[ "$cluster" == "colima"* ]]
 }
 
 # Check if we're on a local cluster
@@ -90,13 +92,18 @@ kubectl wait --for=condition=Ready nodes --all --timeout=5m || true
 
 echo "=== Injecting git SHA into Kustomize overlay ==="
 GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
-sed -i '' "s/GIT_SHA/$GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
+# Cross-platform sed: macOS uses -i '', Linux uses -i without arg
+SED_INPLACE=(-i)
+if [[ "$(uname)" == "Darwin" ]]; then
+  SED_INPLACE=(-i '')
+fi
+sed "${SED_INPLACE[@]}" "s/GIT_SHA/$GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
 
 echo "=== Deploying to Kubernetes ==="
 kubectl apply -k "$PROJECT_ROOT/k8s/overlays/local-e2e"
 
 # Restore placeholder for future runs
-sed -i '' "s/$GIT_SHA/GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
+sed "${SED_INPLACE[@]}" "s/$GIT_SHA/GIT_SHA/g" "$PROJECT_ROOT/k8s/overlays/local-e2e/kustomization.yaml"
 
 echo "=== Waiting for pods to be ready ==="
 kubectl wait --for=condition=Ready pods -n smart-cicd --all --timeout=5m || {

@@ -3,7 +3,7 @@
 # local-e2e-cleanup.sh - Cleanup e2e testing environment
 #
 # This script:
-# 1. Verifies the current kubectl context is a Colima-created cluster
+# 1. Verifies the current kubectl context is a local cluster (Colima or kind)
 # 2. Deletes the smart-cicd namespace
 # 3. Stops the local Docker registry
 #
@@ -12,25 +12,27 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "=== Verifying Colima Kubernetes cluster ==="
+echo "=== Verifying local Kubernetes cluster ==="
 
-# Function to check if current context is Colima
-is_colima_cluster() {
-  local context
+# Function to check if current context is a local cluster (Colima or kind)
+is_local_cluster() {
+  local context cluster
   context=$(kubectl config current-context 2>/dev/null || echo "")
-  # Colima typically uses "colima" or "colima-<profile>" as context name
-  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]]
+  cluster=$(kubectl config get-clusters 2>/dev/null | grep -v NAME | head -1 || echo "")
+  [[ "$context" == "colima" ]] || [[ "$context" == colima-* ]] || \
+  [[ "$context" == "kind" ]] || [[ "$context" == kind-* ]] || \
+  [[ "$cluster" == "kind-"* ]] || [[ "$cluster" == "colima"* ]]
 }
 
-# Check if we're on a Colima cluster
-if ! is_colima_cluster; then
-  echo "ERROR: Current kubectl context is not a Colima cluster."
+# Check if we're on a local cluster
+if ! is_local_cluster; then
+  echo "ERROR: Current kubectl context is not a local cluster."
   echo "Current context: $(kubectl config current-context 2>/dev/null || echo 'none')"
-  echo "Please ensure you are connected to a Colima Kubernetes cluster."
+  echo "Please ensure you are connected to a local Kubernetes cluster."
   exit 1
 fi
 
-echo "Verified: Current context is a Colima cluster: $(kubectl config current-context)"
+echo "Verified: Current context is a local cluster: $(kubectl config current-context)"
 
 echo "=== Cleaning up e2e environment ==="
 
