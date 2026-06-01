@@ -8,7 +8,7 @@
  * 4. Verify run status = 'succeeded'
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { makeSimpleSpec, makeMultiStageSpec, generateTestId } from './helpers/fixtures.js';
 import { createRun, getRun, waitForRunCompletion } from './helpers/api.js';
 import { waitForJob, waitForJobCompletion, cleanupRunResources } from './helpers/k8s.js';
@@ -39,17 +39,18 @@ describe('Full Pipeline Run', () => {
     expect(job).toBeDefined();
     expect(job?.metadata?.labels?.run_id).toBe(runId);
 
-    // Step 3: Wait for Job to complete
-    const completedJob = await waitForJobCompletion(jobName, namespace, 60000);
+    // Step 3: Wait for Job to complete (image pull on fresh cluster may take long)
+    const completedJob = await waitForJobCompletion(jobName, namespace, 180000);
+    expect(completedJob).toBeDefined();
     expect(completedJob?.status?.succeeded).toBe(1);
 
     // Step 4: Verify run status
-    const finalRun = await waitForRunCompletion(runId, 30000);
+    const finalRun = await waitForRunCompletion(runId, 60000);
     expect(finalRun?.status).toBe('succeeded');
 
     // Cleanup
     await cleanupRunResources(runId, namespace);
-  }, 180_000);
+  }, 300_000);
 
   it('multi-stage pipeline executes steps in dependency order', async () => {
     const spec = makeMultiStageSpec();
@@ -64,8 +65,9 @@ describe('Full Pipeline Run', () => {
     const buildJob = await waitForJob(buildJobName, namespace, 30000);
     expect(buildJob).toBeDefined();
 
-    // Wait for build to complete
-    const completedBuild = await waitForJobCompletion(buildJobName, namespace, 60000);
+    // Wait for build to complete (image pull may take long on fresh cluster)
+    const completedBuild = await waitForJobCompletion(buildJobName, namespace, 180000);
+    expect(completedBuild).toBeDefined();
     expect(completedBuild?.status?.succeeded).toBe(1);
 
     // Second job (test) should be created after build completes
@@ -74,16 +76,17 @@ describe('Full Pipeline Run', () => {
     expect(testJob).toBeDefined();
 
     // Wait for test to complete
-    const completedTest = await waitForJobCompletion(testJobName, namespace, 60000);
+    const completedTest = await waitForJobCompletion(testJobName, namespace, 180000);
+    expect(completedTest).toBeDefined();
     expect(completedTest?.status?.succeeded).toBe(1);
 
     // Verify final run status
-    const finalRun = await waitForRunCompletion(runId, 30000);
+    const finalRun = await waitForRunCompletion(runId, 60000);
     expect(finalRun?.status).toBe('succeeded');
 
     // Cleanup
     await cleanupRunResources(runId, namespace);
-  }, 300_000);
+  }, 420_000);
 
   it('run fails when step fails without retry', async () => {
     const spec = makeSimpleSpec({
@@ -108,16 +111,17 @@ describe('Full Pipeline Run', () => {
     expect(run.status).toBe('running');
     const runId = run.id;
 
-    // Wait for job to fail
+    // Wait for job to fail (alpines's exit 1 should complete quickly even with pull)
     const jobName = makeJobName(runId, 'fail');
-    const failedJob = await waitForJobCompletion(jobName, namespace, 60000);
-    expect(failedJob?.status?.failed).toBe(1);
+    const completedJob = await waitForJobCompletion(jobName, namespace, 180000);
+    expect(completedJob).toBeDefined();
+    expect(completedJob?.status?.failed).toBe(1);
 
     // Verify run failed
-    const finalRun = await waitForRunCompletion(runId, 30000);
+    const finalRun = await waitForRunCompletion(runId, 60000);
     expect(finalRun?.status).toBe('failed');
 
     // Cleanup
     await cleanupRunResources(runId, namespace);
-  }, 180_000);
+  }, 300_000);
 });
