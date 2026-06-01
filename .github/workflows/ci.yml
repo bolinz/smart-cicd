@@ -151,5 +151,13 @@ jobs:
       - name: Debug logs
         if: failure()
         run: |
-          kubectl get pods -n smart-cicd
-          kubectl logs -n smart-cicd -l app=api-server --tail=50
+          echo "=== Pods ==="
+          kubectl get pods -n smart-cicd -o wide
+          echo "=== Jobs ==="
+          kubectl get jobs -n smart-cicd -o wide
+          echo "=== api-server logs ==="
+          kubectl logs -n smart-cicd -l app=api-server --tail=100
+          echo "=== Runner pods ==="
+          kubectl get pods -n smart-cicd --show-labels 2>/dev/null
+          echo "=== Runner pod logs ==="
+          kubectl logs -n smart-cicd -l run_id --tail=20 2>/dev/null || echo "(no runner pods)"
