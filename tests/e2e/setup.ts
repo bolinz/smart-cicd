@@ -2,13 +2,20 @@
  * E2E test setup
  *
  * This file runs before all e2e tests to:
- * 1. Verify kubectl context is available
- * 2. Verify we're on a Colima cluster
- * 3. Create/verify the smart-cicd namespace
- * 4. Verify services are deployed
+ * 1. Polyfill EventSource for Node.js
+ * 2. Verify kubectl context is available
+ * 3. Verify we're on a Colima cluster
+ * 4. Create/verify the smart-cicd namespace
+ * 5. Verify services are deployed
  */
 
 import { beforeAll } from 'vitest';
+
+// Polyfill EventSource for Node.js (used by SSE tests)
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { EventSource } = require('eventsource');
+(globalThis as any).EventSource = EventSource;
 import { KubeConfig } from '@kubernetes/client-node';
 import {
   createNamespace,

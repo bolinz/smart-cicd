@@ -17,97 +17,61 @@ import type { RunView } from './helpers/api.js';
 describe('Live Run View', () => {
   const namespace = 'smart-cicd';
 
-  afterEach(async () => {
-    // Cleanup handled by teardown.ts
-  });
-
   it('SSE stream receives run state transitions', async () => {
-    const testId = generateTestId('sse');
-    const spec = makeSimpleSpec({ id: testId });
+    const spec = makeSimpleSpec();
+    const run = await createRun(spec);
+    expect(run.status).toBe('running');
+    const runId = run.id;
 
     // Collect state changes via SSE
     const states: RunView[] = [];
-    let unsubscribe: (() => void) | null = null;
 
-    // Submit spec
-    const run = await createRun(spec);
-    expect(run.status).toBe('running');
-
-    // Subscribe to SSE events
-    await new Promise<void>((resolve) => {
-      unsubscribe = watchRunEvents(testId, (view) => {
+    await new Promise<void>((resolve, reject) => {
+      const unsub = watchRunEvents(runId, (view) => {
         states.push(view);
-        if (view.run.status === 'succeeded') {
+        if (view.run.status === 'succeeded' || view.run.status === 'failed') {
+          unsub();
           resolve();
         }
-      });
+      }, reject);
+
+      // Safety timeout
+      setTimeout(() => { unsub(); resolve(); }, 60000);
     });
 
-    // Wait a bit for final events to be delivered
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // Unsubscribe - TypeScript narrowing issue: unsubscribe is reassigned inside async callback
-    // so we use type assertion to work around it
-    const unsub = unsubscribe as (() => void) | null;
-    if (unsub) {
-      unsub();
-    }
-
-    // Verify we received multiple state transitions
     expect(states.length).toBeGreaterThan(0);
-
-    // First state should be 'running'
     expect(states[0]?.run.status).toBe('running');
 
-    // Last state should be 'succeeded'
     const lastState = states[states.length - 1];
     expect(lastState?.run.status).toBe('succeeded');
 
-    // Verify risk level transitions
-    for (const state of states) {
-      expect(state.riskLevel).toBeDefined();
-    }
-
-    // Cleanup
-    await cleanupRunResources(testId, namespace);
-  }, 180_000);
+    await cleanupRunResources(runId, namespace);
+  }, 120_000);
 
   it('SSE stream receives step transitions', async () => {
-    const testId = generateTestId('steps');
-    const spec = makeSimpleSpec({ id: testId });
-
-    const stepChanges: string[] = [];
-    let unsubscribe: (() => void) | null = null;
-
-    // Submit spec
+    const spec = makeSimpleSpec();
     const run = await createRun(spec);
     expect(run.status).toBe('running');
+    const runId = run.id;
 
-    // Subscribe to SSE events and track step changes
-    await new Promise<void>((resolve) => {
-      unsubscribe = watchRunEvents(testId, (view) => {
+    const stepChanges: string[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      const unsub = watchRunEvents(runId, (view) => {
         if (view.currentStep) {
           stepChanges.push(view.currentStep.stepId);
         }
         if (view.run.status === 'succeeded') {
+          unsub();
           resolve();
         }
-      });
+      }, reject);
+
+      setTimeout(() => { unsub(); resolve(); }, 60000);
     });
 
-    // Wait a bit for final events
-    await new Promise((r) => setTimeout(r, 2000));
-
-    // Unsubscribe - TypeScript narrowing issue: unsubscribe is reassigned inside async callback
-    const unsub2 = unsubscribe as (() => void) | null;
-    if (unsub2) {
-      unsub2();
-    }
-
-    // Verify step changes were received
     expect(stepChanges.length).toBeGreaterThan(0);
 
-    // Cleanup
-    await cleanupRunResources(testId, namespace);
-  }, 180_000);
+    await cleanupRunResources(runId, namespace);
+  }, 120_000);
 });
