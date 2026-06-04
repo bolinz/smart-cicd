@@ -35,11 +35,11 @@ jobs:
         run: |
           REGISTRY="ghcr.io/${{ github.repository_owner }}/smart-cicd" \
           GIT_SHA="${{ github.sha }}" \
-          docker buildx bake --load
+          docker buildx bake -f docker-bake.hcl --load
 
       - name: Push images
         if: github.event_name != 'pull_request'
         run: |
           REGISTRY="ghcr.io/${{ github.repository_owner }}/smart-cicd" \
           GIT_SHA="${{ github.sha }}" \
-          docker buildx bake --push
+          docker buildx bake -f docker-bake.hcl --push
